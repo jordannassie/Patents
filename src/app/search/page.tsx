@@ -16,6 +16,17 @@ const MARKET_CATEGORIES = [
   "Crypto Irreversible Transaction Bottleneck",
   "Semiconductor / Edge Compute Bottleneck",
   "Compliance / Audit / Liability Bottleneck",
+  // DARPA / Defense Bottlenecks
+  "DARPA / Defense Autonomy Bottleneck",
+  "Command & Control Authorization Bottleneck",
+  "Cyber Defense / Data Exfiltration Bottleneck",
+  "Drone Swarm / Coordination Bottleneck",
+  "Human-Machine Teaming Bottleneck",
+  "Robotics Safety / Field Autonomy Bottleneck",
+  "Secure Communications / Signal Trust Bottleneck",
+  "Space / Satellite Resilience Bottleneck",
+  "Battlefield Medical Automation Bottleneck",
+  "Defense Energy / Logistics Bottleneck",
 ];
 
 export default function SearchPage() {
@@ -77,6 +88,11 @@ export default function SearchPage() {
           <p className="mt-3 text-xs text-zinc-600">
             Framework: Future Bottleneck → Old Patent → Modern AI Upgrade → New
             Venture → New Patent Filing
+          </p>
+          <p className="mt-4 text-xs text-blue-400/80">
+            <span className="font-semibold">DARPA Mode:</span> Searches for old
+            inventions that may map to future national-security bottlenecks in
+            autonomy, cyber, command systems, robotics, space, and AI governance.
           </p>
         </div>
 
@@ -175,10 +191,10 @@ export default function SearchPage() {
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {[
               "distributed compute resource allocation",
+              "autonomous defense system control",
               "data exfiltration prevention",
-              "voice authentication fraud detection",
-              "robotic system safety control",
-              "cryptographic transaction verification",
+              "drone swarm coordination",
+              "secure military communication verification",
             ].map((example) => (
               <button
                 key={example}

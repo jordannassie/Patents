@@ -225,6 +225,8 @@ async function generateOpenAIReport(patentResult: any) {
     venture_concepts: parsed.venture_concepts || [],
     new_patent_directions: parsed.new_patent_directions || [],
     risks: parsed.risks || "Attorney review required before proceeding.",
+    // DARPA / Defense relevance (stored in report metadata)
+    defense_relevance: parsed.defense_relevance || null,
     opportunity_score: 0, // Will be calculated
     recommendation: "RESEARCH MORE", // Will be calculated
   };
@@ -254,6 +256,18 @@ LOOK FOR CONSTRAINTS CREATED OR INTENSIFIED BY:
 - Crypto irreversibility (wallet safety, scam prevention, pre-send checks)
 - Edge compute demand (trusted execution, hardware security, distributed processing)
 - Compliance liability (audit trails, regulatory proof, risk reduction)
+
+DARPA / DEFENSE MODE:
+When the category includes "DARPA", "Defense", "Command", "Military", "Battlefield", "Drone Swarm", "Space/Satellite", or "Secure Communications", evaluate whether the old patent could be modernized into:
+- Dual-use defense technology
+- DARPA proposal concept
+- SBIR/STTR idea
+- Government contractor solution
+- Patent-backed national-security venture
+
+Focus on: autonomy control, cyber defense, secure command authorization, AI governance, robotics safety, drone coordination, space resilience, battlefield logistics, human-machine teaming, and secure communications.
+
+IMPORTANT: Keep analysis at system/governance/safety/verification level. Do not provide weapon construction instructions or operational targeting instructions.
 
 The best opportunities are old inventions that:
 - Were too early for their time
@@ -312,7 +326,14 @@ Return valid JSON only with this exact structure:
     }
   ] (2-3 venture concepts showing how to solve the bottleneck),
   "new_patent_directions": string[] (4-6 specific new patentable improvement directions),
-  "risks": string (paragraph listing risks and attorney review requirements)
+  "risks": string (paragraph listing risks and attorney review requirements),
+  "defense_relevance": {
+    "darpa_relevance": string (if defense-related: what DARPA program office might care - TTO, STO, I2O, BTO, DSO, MTO, etc.),
+    "dual_use_potential": string (commercial + defense applications),
+    "government_buyer": string (DoD, intelligence community, homeland security, NASA, etc.),
+    "commercial_market": string (enterprise/commercial market beyond defense),
+    "proposal_angle": string (SBIR/STTR, DARPA program, or government contract angle)
+  } (only include if category is DARPA/defense-related, otherwise null)
 }
 
 Note: Use these score names in your response:
