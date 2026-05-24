@@ -566,6 +566,41 @@ export default function PatentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Legal Disclaimer */}
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <div className="rounded-xl border border-yellow-800 bg-yellow-900/20 p-6">
+          <div className="flex items-start gap-3">
+            <svg
+              className="h-6 w-6 flex-shrink-0 text-yellow-400 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-yellow-300 mb-2">
+                Legal Disclaimer
+              </h3>
+              <p className="text-sm text-yellow-200/90 mb-2">
+                Patent status and expiration estimates are informational only. 
+                Attorney review is required before relying on any patent status, 
+                commercialization strategy, or new patent filing.
+              </p>
+              <p className="text-sm text-yellow-200/90">
+                This report is not legal advice. Patentability, freedom to operate, 
+                infringement risk, and patent status require review by a qualified patent attorney.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

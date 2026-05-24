@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { searchPatents } from '@/lib/patents/searchPatents';
 import { scorePreAiOpportunity, extractBottleneckReason } from '@/lib/hunter/scorePreAiOpportunity';
+import { analyzePatentOpportunity } from '@/lib/patents/analyzePatentOpportunity';
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
@@ -186,37 +187,117 @@ export async function POST(request: Request) {
 
         for (const candidate of qualifiedCandidates) {
           // Check if we've exceeded AI analysis budget for this batch
-          if (aiAnalysesRemaining <= 0) {
-            console.log('[Process Next] AI analysis budget exhausted for this batch');
-            break;
-          }
+          const shouldRunAI = aiAnalysesRemaining > 0;
 
-          // AI Analysis Strategy:
-          // The Hunter saves opportunities with pre-AI scores first.
-          // Full AI analysis can be triggered separately via /api/patents/analyze.
-          // This design saves costs by pre-filtering candidates before expensive AI calls.
-          // UI displays "Pre-AI Candidate" badge when opportunity_score is null,
-          // and "AI Report Ready" badge when a full AI report exists.
-          
-          const { error: itemError } = await supabase
-            .from('opportunity_hunter_items')
-            .insert({
-              run_id: run.id,
-              task_id: task.id,
-              category: task.category,
-              query: task.query,
-              title: candidate.title,
-              patent_number: candidate.patent_number,
-              status_estimate: candidate.status_estimate,
-              pre_ai_score: candidate.preAiScore,
-              bottleneck_reason: candidate.bottleneckReason,
-              reason_saved: `Pre-AI score: ${candidate.preAiScore}/100`,
-            });
+          try {
+            // First, ensure patent_result exists in database
+            const { data: existingResult } = await supabase
+              .from('patent_results')
+              .select('id')
+              .eq('patent_number', candidate.patent_number)
+              .eq('search_id', task.search_id || null)
+              .single();
 
-          if (!itemError) {
-            savedInTask++;
-            totalSaved++;
-            aiAnalysesRemaining--;
+            let patentResultId = existingResult?.id;
+
+            // If patent_result doesn't exist, create it
+            if (!patentResultId) {
+              const { data: newResult, error: insertError } = await supabase
+                .from('patent_results')
+                .insert({
+                  search_id: null, // Hunter results don't have a search_id from manual search
+                  patent_number: candidate.patent_number,
+                  title: candidate.title,
+                  abstract: candidate.abstract,
+                  filing_date: candidate.filing_date,
+                  grant_date: candidate.grant_date,
+                  assignee: candidate.assignee,
+                  inventors: candidate.inventors,
+                  cpc_codes: candidate.cpc_codes,
+                  status_estimate: candidate.status_estimate,
+                  source_url: candidate.source_url,
+                  source: candidate.source,
+                  is_demo: candidate.is_demo || false,
+                  raw_json: candidate.raw_json || null,
+                })
+                .select('id')
+                .single();
+
+              if (insertError) {
+                console.error('[Process Next] Failed to create patent_result:', insertError);
+                continue; // Skip this candidate
+              }
+
+              patentResultId = newResult?.id;
+            }
+
+            if (!patentResultId) {
+              console.error('[Process Next] No patent_result_id available');
+              continue;
+            }
+
+            // Run AI analysis if budget allows
+            let reportId = null;
+            let opportunityScore = candidate.preAiScore;
+            let recommendation = null;
+            let firstModernizationAngle = candidate.bottleneckReason;
+
+            if (shouldRunAI) {
+              try {
+                const analysisResult = await analyzePatentOpportunity(
+                  patentResultId,
+                  false, // Don't force if report exists
+                  task.category // Pass category for context
+                );
+
+                reportId = analysisResult.reportId;
+                opportunityScore = analysisResult.opportunity_score;
+                recommendation = analysisResult.recommendation;
+                firstModernizationAngle = analysisResult.modernization_angles[0] || candidate.bottleneckReason;
+
+                analyzedInTask++;
+                aiAnalysesRemaining--;
+                totalAnalyzed++;
+
+                console.log(`[Process Next] AI analysis complete: score ${opportunityScore}, ${recommendation}`);
+              } catch (aiError) {
+                console.error('[Process Next] AI analysis failed:', aiError);
+                // Continue with pre-AI score
+              }
+            }
+
+            // Save opportunity_hunter_item
+            const { error: itemError } = await supabase
+              .from('opportunity_hunter_items')
+              .insert({
+                run_id: run.id,
+                task_id: task.id,
+                patent_result_id: patentResultId,
+                report_id: reportId,
+                category: task.category,
+                query: task.query,
+                title: candidate.title,
+                patent_number: candidate.patent_number,
+                status_estimate: candidate.status_estimate,
+                pre_ai_score: candidate.preAiScore,
+                opportunity_score: opportunityScore,
+                recommendation: recommendation,
+                bottleneck_reason: candidate.bottleneckReason,
+                modernization_angle: firstModernizationAngle,
+                reason_saved: reportId
+                  ? `Full AI analysis: ${opportunityScore}/100 - ${recommendation}`
+                  : `Pre-AI candidate: ${candidate.preAiScore}/100`,
+              });
+
+            if (!itemError) {
+              savedInTask++;
+              totalSaved++;
+            } else {
+              console.error('[Process Next] Failed to save opportunity item:', itemError);
+            }
+          } catch (candidateError) {
+            console.error('[Process Next] Error processing candidate:', candidateError);
+            // Continue with next candidate
           }
         }
 
