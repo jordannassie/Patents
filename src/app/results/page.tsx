@@ -16,6 +16,13 @@ interface PatentResult {
   is_demo: boolean;
 }
 
+interface OpportunityReport {
+  id: string;
+  opportunity_score: number;
+  recommendation: string;
+  summary: string;
+}
+
 interface SearchData {
   query: string;
   market: string | null;
@@ -30,6 +37,8 @@ function ResultsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savedPatents, setSavedPatents] = useState<string[]>([]);
+  const [analyzingPatent, setAnalyzingPatent] = useState<string | null>(null);
+  const [reports, setReports] = useState<Record<string, OpportunityReport>>({});
 
   useEffect(() => {
     if (!searchId) {
@@ -68,6 +77,39 @@ function ResultsContent() {
         ? prev.filter((id) => id !== patentId)
         : [...prev, patentId]
     );
+  };
+
+  const handleAnalyze = async (patentResultId: string) => {
+    setAnalyzingPatent(patentResultId);
+
+    try {
+      const response = await fetch("/api/patents/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patentResultId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Analysis failed");
+      }
+
+      const data = await response.json();
+      
+      // Store the report
+      setReports((prev) => ({
+        ...prev,
+        [patentResultId]: data.report,
+      }));
+    } catch (err) {
+      console.error("Error analyzing patent:", err);
+      alert("Analysis failed. Please try again.");
+    } finally {
+      setAnalyzingPatent(null);
+    }
   };
 
   if (loading) {
@@ -260,17 +302,106 @@ function ResultsContent() {
                     <p className="mb-4 text-sm text-zinc-300">
                       {patent.abstract}
                     </p>
+
+                    {/* AI Report Summary (if analyzed) */}
+                    {reports[patent.id] && (
+                      <div className="mt-4 rounded-lg border border-blue-900/50 bg-blue-950/20 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-2xl font-bold text-white">
+                              {reports[patent.id].opportunity_score}
+                              <span className="text-sm font-normal text-zinc-400">
+                                /100
+                              </span>
+                            </div>
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                reports[patent.id].recommendation ===
+                                "BUILD NOW"
+                                  ? "bg-green-500/20 text-green-400"
+                                  : reports[patent.id].recommendation ===
+                                    "STRONG WATCH"
+                                  ? "bg-blue-500/20 text-blue-400"
+                                  : reports[patent.id].recommendation ===
+                                    "RESEARCH MORE"
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : "bg-red-500/20 text-red-400"
+                              }`}
+                            >
+                              {reports[patent.id].recommendation}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-blue-300">
+                          {reports[patent.id].summary}
+                        </p>
+                        <Link
+                          href={`/patents/${patent.patent_number}`}
+                          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                        >
+                          View Full Report
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link
-                    href={`/patents/${patent.patent_number}`}
-                    className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                  >
-                    Analyze with AI
-                  </Link>
+                  {!reports[patent.id] ? (
+                    <button
+                      onClick={() => handleAnalyze(patent.id)}
+                      disabled={analyzingPatent === patent.id}
+                      className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {analyzingPatent === patent.id ? (
+                        <span className="flex items-center gap-2">
+                          <svg
+                            className="h-4 w-4 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          AI is ranking this opportunity...
+                        </span>
+                      ) : (
+                        "Analyze with AI"
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/patents/${patent.patent_number}`}
+                      className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    >
+                      View Full Report
+                    </Link>
+                  )}
                   <Link
                     href={`/patents/${patent.patent_number}`}
                     className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
