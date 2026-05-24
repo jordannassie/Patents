@@ -205,14 +205,17 @@ async function generateOpenAIReport(patentResult: any) {
 
   const parsed = JSON.parse(responseText);
 
-  // Ensure all required fields exist
+  // Ensure all required fields exist with new score names
   return {
-    future_market_score: parsed.future_market_score || 50,
+    future_market_score: parsed.market_size_score || parsed.future_market_score || 50,
     ai_upgrade_score: parsed.ai_upgrade_score || 50,
     patentability_score: parsed.patentability_score || 50,
     buildability_score: parsed.buildability_score || 50,
-    revenue_score: parsed.revenue_score || 50,
-    strategic_fit_score: parsed.strategic_fit_score || 50,
+    revenue_score: parsed.licensing_royalty_score || parsed.revenue_score || 50,
+    strategic_fit_score: parsed.infrastructure_control_score || parsed.network_effect_score || parsed.strategic_fit_score || 50,
+    // Store additional scores for enhanced reporting
+    network_effect_score: parsed.network_effect_score || 50,
+    regulatory_pressure_score: parsed.regulatory_pressure_score || 50,
     summary: parsed.summary || "Analysis completed.",
     modernization_angles: parsed.modernization_angles || [],
     venture_concepts: parsed.venture_concepts || [],
@@ -227,9 +230,25 @@ async function generateOpenAIReport(patentResult: any) {
  * Build the AI analysis prompt
  */
 function buildAnalysisPrompt(patentResult: any): string {
-  return `You are an AI patent opportunity analyst and venture strategist.
+  return `You are an AI patent opportunity analyst and venture strategist specializing in high-value, infrastructure-layer business opportunities.
 
-You are reviewing an old patent record. Your job is NOT to suggest copying the old invention. Your job is to identify whether the old invention suggests a modern, new, non-obvious improvement that could become a new product, startup, or patent direction.
+You are reviewing an old patent record. Your job is NOT to suggest copying the old invention. Your job is to identify whether the old invention suggests a modern, new, non-obvious improvement that could become a new product, startup, or patent direction with billion-dollar market potential.
+
+PRIORITIZE opportunities that could become:
+- Infrastructure companies (transaction rails, authorization layers, compliance infrastructure)
+- Enterprise platforms (mission-critical systems, risk engines, governance tools)
+- Government/defense applications (command systems, secure communications, critical infrastructure)
+- Financial infrastructure (payment rails, fraud detection, custody solutions)
+- Security standards (cybersecurity layers, access control, data protection)
+- Network effect businesses (platforms with strong lock-in and defensibility)
+
+DEPRIORITIZE:
+- Small consumer apps
+- Content tools
+- Lifestyle products
+- Low-defensibility features
+- Ministry/religious tools
+- Low network-effect businesses
 
 Analyze this patent:
 
@@ -262,56 +281,71 @@ ${patentResult.status_estimate || "Unknown"}
 
 Return valid JSON only with this exact structure:
 {
-  "future_market_score": number (1-100),
-  "ai_upgrade_score": number (1-100),
-  "patentability_score": number (1-100),
-  "buildability_score": number (1-100),
-  "revenue_score": number (1-100),
-  "strategic_fit_score": number (1-100),
-  "summary": string (2-3 sentences explaining the original invention and why modernization is interesting),
-  "modernization_angles": string[] (5-7 specific modern technology upgrades),
+  "market_size_score": number (1-100, rate TAM potential: 85+ for $10B+ markets, 70+ for $1B+ markets),
+  "network_effect_score": number (1-100, rate lock-in and platform potential),
+  "regulatory_pressure_score": number (1-100, rate compliance/governance demand),
+  "ai_upgrade_score": number (1-100, rate AI/automation modernization potential),
+  "patentability_score": number (1-100, rate novel improvement potential),
+  "infrastructure_control_score": number (1-100, rate potential as critical infrastructure layer),
+  "licensing_royalty_score": number (1-100, rate IP licensing/royalty potential),
+  "buildability_score": number (1-100, rate technical feasibility with modern tools),
+  "summary": string (2-3 sentences explaining the original invention and why modernization creates enterprise/infrastructure opportunity),
+  "modernization_angles": string[] (5-7 specific modern technology upgrades focused on enterprise/infrastructure value),
   "venture_concepts": [
     {
       "name": string,
       "description": string,
-      "target_customer": string,
-      "business_model": string
+      "target_customer": string (enterprise/government/financial institutions preferred),
+      "business_model": string (infrastructure/platform/licensing preferred)
     }
-  ] (2-3 venture concepts),
-  "new_patent_directions": string[] (4-6 specific new patentable improvement directions),
+  ] (2-3 venture concepts with billion-dollar potential),
+  "new_patent_directions": string[] (4-6 specific new patentable improvement directions for infrastructure/enterprise applications),
   "risks": string (paragraph listing risks and attorney review requirements)
 }
+
+Note: Use these updated score names in your response:
+- market_size_score (replaces future_market_score)
+- network_effect_score (new)
+- regulatory_pressure_score (new)
+- ai_upgrade_score (same)
+- patentability_score (same)
+- infrastructure_control_score (replaces strategic_fit_score)
+- licensing_royalty_score (replaces revenue_score)
+- buildability_score (same)
 
 Required analysis:
 1. Explain the original invention in plain English.
 2. Explain why it may have been too early or outdated.
-3. Identify modern technology upgrades.
-4. Identify possible new patentable improvement directions.
-5. Create 2-3 venture concepts.
+3. Identify modern technology upgrades for enterprise/infrastructure applications.
+4. Identify possible new patentable improvement directions with strong defensibility.
+5. Create 2-3 venture concepts with enterprise/government/financial focus.
 6. Identify risks and attorney-review issues.
 
-Modern technology upgrades to consider:
-- AI and machine learning
-- Cloud APIs and serverless systems
-- Mobile-first applications
-- Browser extensions and PWAs
-- Blockchain for audit trails
-- Autonomous agents
-- Compliance dashboards
-- Cybersecurity enhancements
-- Voice identity and biometrics
-- Transaction risk scoring
-- Human-in-the-loop authorization
-- Defense/government applications
-- Enterprise risk reduction
+Modern technology upgrades to consider (enterprise focus):
+- AI agents and autonomous decision-making systems
+- Pre-execution authorization and governance layers
+- Cybersecurity and data protection infrastructure
+- Cryptographic protocols and secure computation
+- Transaction rails and payment infrastructure
+- Command and control systems
+- Medical AI and regulatory compliance
+- Grid control and energy infrastructure
+- Identity verification and authentication systems
+- Supply chain and logistics automation
+- Risk scoring and compliance engines
+- Hardware security and trusted execution
 
 Rules:
-- Do not give legal advice.
-- Do not claim patentability is guaranteed.
-- Do not claim the old patent is safe to copy.
-- Always include "Attorney review required."
-- Focus on new improvements, new workflows, new systems, and new technology layers.
-- Do not recommend copying the expired patent directly.`;
+- Only recommend BUILD NOW if the idea has clear enterprise/government/financial/infrastructure potential and $1B+ TAM
+- STRONG WATCH if market is large but patentability or build path needs more research
+- RESEARCH MORE if useful but market size or defensibility unclear
+- SKIP if low defensibility, low market size, or just a feature
+- Do not give legal advice
+- Do not claim patentability is guaranteed
+- Do not claim the old patent is safe to copy
+- Always include "Attorney review required"
+- Focus on new improvements, new workflows, new systems, and new technology layers
+- Do not recommend copying the expired patent directly`;
 }
 
 /**
@@ -374,15 +408,16 @@ function generateDemoReport(patentResult: any) {
 
 /**
  * Calculate weighted opportunity score
+ * Updated weights for infrastructure/enterprise focus
  */
 function calculateOpportunityScore(reportData: any): number {
   const weights = {
-    future_market: 0.2,
-    ai_upgrade: 0.2,
-    patentability: 0.2,
-    buildability: 0.15,
-    revenue: 0.15,
-    strategic_fit: 0.1,
+    future_market: 0.25, // Increased: Market size is critical for $1B+ opportunities
+    ai_upgrade: 0.15, // AI modernization potential
+    patentability: 0.15, // New patent defensibility
+    buildability: 0.15, // Technical feasibility
+    revenue: 0.15, // Licensing/royalty potential
+    strategic_fit: 0.15, // Infrastructure control/network effects
   };
 
   const score =
@@ -398,10 +433,15 @@ function calculateOpportunityScore(reportData: any): number {
 
 /**
  * Get recommendation based on opportunity score
+ * Updated logic for enterprise/infrastructure focus
  */
 function getRecommendation(score: number): string {
+  // BUILD NOW only for clear $1B+ enterprise/infrastructure opportunities
   if (score >= 85) return "BUILD NOW";
+  // STRONG WATCH if large market but needs more research
   if (score >= 70) return "STRONG WATCH";
+  // RESEARCH MORE if useful but unclear market/defensibility
   if (score >= 50) return "RESEARCH MORE";
+  // SKIP if low defensibility or low market size
   return "SKIP";
 }

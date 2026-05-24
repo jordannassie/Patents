@@ -4,15 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const MARKET_CATEGORIES = [
-  "AI Authorization",
-  "Crypto Security",
-  "Payments/Fraud",
-  "Voice Authentication",
-  "Autonomous Systems",
-  "Healthcare Automation",
-  "Defense / Government",
-  "Bible / Education Tech",
-  "Trading / Market Data",
+  "AI Agents & Autonomous Software",
+  "AI Safety / Authorization / Governance",
+  "Cybersecurity & Data Protection",
+  "Crypto / Digital Assets / Wallet Security",
+  "Payments / Fraud / Fintech Infrastructure",
+  "Robotics & Autonomous Machines",
+  "Defense / Aerospace / Command Systems",
+  "Healthcare AI / Medical Automation",
+  "Energy / Grid / Climate Infrastructure",
+  "Semiconductors / Edge / Advanced Computing",
+  "Quantum / Cryptography / Secure Computing",
+  "Digital Identity / Biometrics / Authentication",
+  "Supply Chain / Logistics / Industrial Automation",
+  "Insurance / Risk / Compliance Infrastructure",
+  "Autonomous Vehicles / Drones / Mobility",
 ];
 
 export default function SearchPage() {
@@ -63,8 +69,13 @@ export default function SearchPage() {
             Search Patent Opportunities
           </h1>
           <p className="mt-4 text-lg text-zinc-400">
-            Enter a market, technology, or problem space to discover expired
-            patents with modernization potential
+            Automatically search billion-dollar industries for likely expired
+            patent opportunities that can be modernized with AI, automation, and
+            infrastructure-layer business models.
+          </p>
+          <p className="mt-2 text-sm text-zinc-500">
+            PatentBoom focuses on high-value categories with enterprise,
+            government, financial, infrastructure, or platform potential.
           </p>
         </div>
 
@@ -82,7 +93,7 @@ export default function SearchPage() {
               id="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Try: crypto transaction safety, voice authentication, autonomous AI control"
+              placeholder="Try: autonomous agent authorization, transaction fraud prevention, grid control system"
               className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSearching}
             />
@@ -162,11 +173,11 @@ export default function SearchPage() {
           </h2>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {[
-              "biometric authentication",
-              "blockchain voting",
-              "AI-powered diagnostics",
-              "autonomous drone delivery",
-              "voice encryption",
+              "autonomous agent authorization",
+              "transaction fraud prevention",
+              "medical AI decision support",
+              "grid control authorization",
+              "cryptographic key management",
             ].map((example) => (
               <button
                 key={example}
