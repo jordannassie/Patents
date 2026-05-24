@@ -44,12 +44,27 @@ interface OpportunityReport {
   created_at: string;
 }
 
+interface HunterContext {
+  id: string;
+  category: string;
+  query: string;
+  pre_ai_score: number;
+  opportunity_score: number | null;
+  recommendation: string | null;
+  bottleneck_reason: string;
+  modernization_angle: string | null;
+  reason_saved: string | null;
+  run_id: string;
+  report_id: string | null;
+}
+
 export default function PatentDetailPage() {
   const params = useParams();
   const patentId = params.id as string;
   
   const [patent, setPatent] = useState<PatentData | null>(null);
   const [report, setReport] = useState<OpportunityReport | null>(null);
+  const [hunterContext, setHunterContext] = useState<HunterContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +96,21 @@ export default function PatentDetailPage() {
         // Load report if it exists
         if (patentData.report) {
           setReport(patentData.report);
+        }
+
+        // Load Hunter context if this patent was saved by Hunter
+        try {
+          const hunterResponse = await fetch(
+            `/api/hunter/opportunities?patent_result_id=${encodeURIComponent(patentData.patent.id)}`
+          );
+          if (hunterResponse.ok) {
+            const hunterData = await hunterResponse.json();
+            if (hunterData.items && hunterData.items.length > 0) {
+              setHunterContext(hunterData.items[0]); // Use the first/latest one
+            }
+          }
+        } catch (hunterErr) {
+          console.log('No Hunter context found for this patent');
         }
       } catch (err) {
         console.error("Error loading patent:", err);
@@ -334,6 +364,92 @@ export default function PatentDetailPage() {
             <p className="mt-2 text-zinc-300">{patent.abstract}</p>
           </div>
         </div>
+
+        {/* Hunter Opportunity Context */}
+        {hunterContext && (
+          <div className="mt-6 rounded-xl border border-indigo-800 bg-indigo-900/20 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Hunter Opportunity Context
+              </h2>
+              {hunterContext.report_id ? (
+                <span className="px-3 py-1 text-xs font-medium bg-green-900/50 text-green-400 rounded-full">
+                  AI Report Ready
+                </span>
+              ) : (
+                <span className="px-3 py-1 text-xs font-medium bg-blue-900/50 text-blue-400 rounded-full">
+                  Pre-AI Candidate
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-indigo-300 font-medium mb-1">Category</div>
+                <div className="text-white">{hunterContext.category}</div>
+              </div>
+              <div>
+                <div className="text-sm text-indigo-300 font-medium mb-1">Search Query</div>
+                <div className="text-white">{hunterContext.query}</div>
+              </div>
+              <div>
+                <div className="text-sm text-indigo-300 font-medium mb-1">Pre-AI Score</div>
+                <div className="text-2xl font-bold text-indigo-400">{hunterContext.pre_ai_score}</div>
+              </div>
+              {hunterContext.opportunity_score && (
+                <div>
+                  <div className="text-sm text-indigo-300 font-medium mb-1">AI Opportunity Score</div>
+                  <div className="text-2xl font-bold text-green-400">{hunterContext.opportunity_score}</div>
+                </div>
+              )}
+              {hunterContext.recommendation && (
+                <div>
+                  <div className="text-sm text-indigo-300 font-medium mb-1">Recommendation</div>
+                  <div className={`inline-block px-3 py-1 rounded font-medium ${
+                    hunterContext.recommendation === 'BUILD NOW' ? 'bg-green-900/50 text-green-400' :
+                    hunterContext.recommendation === 'STRONG WATCH' ? 'bg-blue-900/50 text-blue-400' :
+                    'bg-yellow-900/50 text-yellow-400'
+                  }`}>
+                    {hunterContext.recommendation}
+                  </div>
+                </div>
+              )}
+            </div>
+            {hunterContext.bottleneck_reason && (
+              <div className="mt-4">
+                <div className="text-sm text-indigo-300 font-medium mb-1">Bottleneck Reason</div>
+                <div className="text-white">{hunterContext.bottleneck_reason}</div>
+              </div>
+            )}
+            {hunterContext.modernization_angle && (
+              <div className="mt-4">
+                <div className="text-sm text-indigo-300 font-medium mb-1">Modernization Angle</div>
+                <div className="text-white">{hunterContext.modernization_angle}</div>
+              </div>
+            )}
+            {hunterContext.reason_saved && (
+              <div className="mt-4">
+                <div className="text-sm text-indigo-300 font-medium mb-1">Why Saved</div>
+                <div className="text-white">{hunterContext.reason_saved}</div>
+              </div>
+            )}
+            {hunterContext.run_id && (
+              <div className="mt-4">
+                <Link
+                  href={`/hunter/runs/${hunterContext.run_id}`}
+                  className="inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300"
+                >
+                  View Hunter Run
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* AI Opportunity Report or Generate Button */}
         {report ? (

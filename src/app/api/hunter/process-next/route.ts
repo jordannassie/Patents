@@ -292,6 +292,36 @@ export async function POST(request: Request) {
             if (!itemError) {
               savedInTask++;
               totalSaved++;
+
+              // Auto-save to saved_opportunities if:
+              // 1. AI report exists
+              // 2. Opportunity score is high enough
+              // 3. Not already saved manually
+              if (reportId && opportunityScore >= minScore) {
+                try {
+                  // Check if already in saved_opportunities
+                  const { data: existingSaved } = await supabase
+                    .from('saved_opportunities')
+                    .select('id')
+                    .eq('patent_result_id', patentResultId)
+                    .single();
+
+                  if (!existingSaved) {
+                    // Auto-save to saved_opportunities
+                    await supabase
+                      .from('saved_opportunities')
+                      .insert({
+                        patent_result_id: patentResultId,
+                        notes: `Auto-saved by Hunter: ${task.category} | Score: ${opportunityScore} | ${recommendation}`,
+                      });
+
+                    console.log(`[Process Next] Auto-saved to saved_opportunities: ${candidate.title}`);
+                  }
+                } catch (saveError) {
+                  console.log('[Process Next] Could not auto-save to saved_opportunities:', saveError);
+                  // Non-critical error, continue processing
+                }
+              }
             } else {
               console.error('[Process Next] Failed to save opportunity item:', itemError);
             }

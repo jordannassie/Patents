@@ -850,44 +850,53 @@ export default function HunterPage() {
           {opportunities.length > 0 ? (
             <div className="space-y-3">
               {opportunities.map((opp) => (
-                <div key={opp.id} className="bg-gray-800 rounded-lg p-4 flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-white font-medium">{opp.title}</h3>
-                      {opp.opportunity_score ? (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-green-900/50 text-green-400 rounded">
-                          AI Report Ready
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
-                          Pre-AI Candidate
+                <Link
+                  key={opp.id}
+                  href={`/patents/${opp.patent_result_id}`}
+                  className="block bg-gray-800 rounded-lg p-4 hover:bg-gray-750 hover:border-indigo-500/50 border border-transparent transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-white font-medium group-hover:text-indigo-300 transition-colors">{opp.title}</h3>
+                        {opp.opportunity_score ? (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-green-900/50 text-green-400 rounded">
+                            AI Report Ready
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
+                            Pre-AI Candidate
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <span className="text-gray-500">{opp.category}</span>
+                        <span className="text-gray-600">•</span>
+                        <span className="text-blue-400">{opp.bottleneck_reason}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-indigo-400">
+                          {opp.opportunity_score || opp.pre_ai_score}
+                        </div>
+                        <div className="text-xs text-gray-500">Score</div>
+                      </div>
+                      {opp.recommendation && (
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          opp.recommendation === 'BUILD NOW' ? 'bg-green-900/50 text-green-400' :
+                          opp.recommendation === 'STRONG WATCH' ? 'bg-blue-900/50 text-blue-400' :
+                          'bg-yellow-900/50 text-yellow-400'
+                        }`}>
+                          {opp.recommendation}
                         </span>
                       )}
-                    </div>
-                    <div className="flex gap-2 text-xs">
-                      <span className="text-gray-500">{opp.category}</span>
-                      <span className="text-gray-600">•</span>
-                      <span className="text-blue-400">{opp.bottleneck_reason}</span>
+                      <svg className="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-indigo-400">
-                        {opp.opportunity_score || opp.pre_ai_score}
-                      </div>
-                      <div className="text-xs text-gray-500">Score</div>
-                    </div>
-                    {opp.recommendation && (
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        opp.recommendation === 'BUILD NOW' ? 'bg-green-900/50 text-green-400' :
-                        opp.recommendation === 'STRONG WATCH' ? 'bg-blue-900/50 text-blue-400' :
-                        'bg-yellow-900/50 text-yellow-400'
-                      }`}>
-                        {opp.recommendation}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -895,9 +904,8 @@ export default function HunterPage() {
               Saved opportunities will appear here as the Hunter finds high-scoring patent ideas.
             </div>
           )}
-          <div className="mt-4 text-xs text-gray-600">
-            Note: Pre-AI Candidates are saved based on pre-scoring only. 
-            Full AI analysis can be run separately for detailed reports.
+          <div className="mt-4 text-xs text-gray-500">
+            <span className="font-medium text-gray-400">AI Report Ready</span> means PatentBoom generated modernization angles, venture concepts, and possible new patent directions.
           </div>
         </div>
 

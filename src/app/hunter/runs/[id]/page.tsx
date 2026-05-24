@@ -44,12 +44,14 @@ interface HunterItem {
   query: string;
   title: string;
   patent_number: string;
+  patent_result_id: string;
   status_estimate: string;
   pre_ai_score: number;
   opportunity_score: number | null;
   recommendation: string | null;
   bottleneck_reason: string;
   modernization_angle: string | null;
+  report_id: string | null;
 }
 
 export default function HunterRunDetailPage() {
@@ -206,30 +208,54 @@ export default function HunterRunDetailPage() {
           ) : (
             <div className="space-y-4">
               {items.map((item) => (
-                <div key={item.id} className="bg-gray-800 rounded-lg p-4">
+                <Link
+                  key={item.id}
+                  href={`/patents/${item.patent_result_id}`}
+                  className="block bg-gray-800 rounded-lg p-4 hover:bg-gray-750 hover:border-indigo-500/50 border border-transparent transition-all group"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg group-hover:text-indigo-300 transition-colors">{item.title}</h3>
+                        {item.report_id ? (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-green-900/50 text-green-400 rounded">
+                            AI Report Ready
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
+                            Pre-AI Candidate
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-400 mb-2">Patent: {item.patent_number}</p>
                       <p className="text-sm text-indigo-300 mb-2">{item.bottleneck_reason}</p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-indigo-400 mb-1">
-                        {item.pre_ai_score}
+                    <div className="flex items-center gap-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-indigo-400 mb-1">
+                          {item.opportunity_score || item.pre_ai_score}
+                        </div>
+                        <p className="text-xs text-gray-500">{item.opportunity_score ? 'AI Score' : 'Pre-AI Score'}</p>
                       </div>
-                      <p className="text-xs text-gray-500">Pre-AI Score</p>
+                      <svg className="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
                   </div>
                   <div className="flex gap-2 text-xs">
                     <span className="px-2 py-1 bg-gray-700 rounded">{item.category}</span>
                     <span className="px-2 py-1 bg-gray-700 rounded">{item.status_estimate}</span>
                     {item.recommendation && (
-                      <span className="px-2 py-1 bg-indigo-900/50 text-indigo-300 rounded">
+                      <span className={`px-2 py-1 rounded font-medium ${
+                        item.recommendation === 'BUILD NOW' ? 'bg-green-900/50 text-green-300' :
+                        item.recommendation === 'STRONG WATCH' ? 'bg-blue-900/50 text-blue-300' :
+                        'bg-yellow-900/50 text-yellow-300'
+                      }`}>
                         {item.recommendation}
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
