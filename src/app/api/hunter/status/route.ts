@@ -52,12 +52,42 @@ export async function GET() {
 
     const latestWorkerLog = workerLogs && workerLogs.length > 0 ? workerLogs[0] : null;
 
+    // Get latest cron worker log for cron detection
+    const { data: cronLogs } = await supabase
+      .from('hunter_worker_logs')
+      .select('*')
+      .eq('source', 'cron')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const latestCronLog = cronLogs && cronLogs.length > 0 ? cronLogs[0] : null;
+
+    // Cron detection logic
+    let cronDetected = false;
+    let cronActive = false;
+    let cronStatusLabel = 'Cron not detected';
+
+    if (latestCronLog) {
+      cronDetected = true;
+      const cronAge = Date.now() - new Date(latestCronLog.created_at).getTime();
+      const fifteenMinutesMs = 15 * 60 * 1000;
+
+      if (cronAge < fifteenMinutesMs) {
+        cronActive = true;
+        cronStatusLabel = 'Cron active';
+      } else {
+        cronActive = false;
+        cronStatusLabel = 'Cron delayed';
+      }
+    }
+
     // Calculate next expected worker run time
     const workerIntervalMinutes = 10;
     let nextExpectedWorkerRunAt: string | null = null;
-    let secondsUntilNextExpectedRun = 0;
+    let secondsUntilNextExpectedRun: number | null = null;
 
     if (latestWorkerLog) {
+      // Use latest worker log time
       const baseTime = latestWorkerLog.completed_at || latestWorkerLog.started_at;
       if (baseTime) {
         const nextRun = new Date(baseTime);
@@ -65,8 +95,16 @@ export async function GET() {
         nextExpectedWorkerRunAt = nextRun.toISOString();
 
         const now = new Date();
-        secondsUntilNextExpectedRun = Math.max(0, Math.floor((nextRun.getTime() - now.getTime()) / 1000));
+        secondsUntilNextExpectedRun = Math.floor((nextRun.getTime() - now.getTime()) / 1000);
       }
+    } else if (pendingTasks > 0 && latestRun && latestRun.created_at) {
+      // No worker log yet, but tasks are pending - use run created_at
+      const nextRun = new Date(latestRun.created_at);
+      nextRun.setMinutes(nextRun.getMinutes() + workerIntervalMinutes);
+      nextExpectedWorkerRunAt = nextRun.toISOString();
+
+      const now = new Date();
+      secondsUntilNextExpectedRun = Math.floor((nextRun.getTime() - now.getTime()) / 1000);
     }
 
     // Determine overall status
@@ -106,6 +144,9 @@ export async function GET() {
       lastRunCreatedAt: latestRun?.created_at || null,
       lastRunCompletedAt: latestRun?.completed_at || null,
       lastRunName: latestRun?.name || null,
+      cronDetected,
+      cronActive,
+      cronStatusLabel,
     });
   } catch (error) {
     console.error('[Hunter Status] Error:', error);

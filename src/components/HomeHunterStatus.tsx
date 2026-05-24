@@ -19,10 +19,13 @@ interface HunterStatus {
   lastWorkerItemsSaved: number;
   workerIntervalMinutes: number;
   nextExpectedWorkerRunAt: string | null;
-  secondsUntilNextExpectedRun: number;
+  secondsUntilNextExpectedRun: number | null;
   lastRunCreatedAt: string | null;
   lastRunCompletedAt: string | null;
   lastRunName: string | null;
+  cronDetected: boolean;
+  cronActive: boolean;
+  cronStatusLabel: string;
 }
 
 export default function HomeHunterStatus() {
@@ -39,13 +42,17 @@ export default function HomeHunterStatus() {
   useEffect(() => {
     if (!status) return;
 
-    setCountdown(status.secondsUntilNextExpectedRun);
+    if (status.secondsUntilNextExpectedRun !== null) {
+      setCountdown(Math.max(0, status.secondsUntilNextExpectedRun));
 
-    const timer = setInterval(() => {
-      setCountdown((prev) => Math.max(0, prev - 1));
-    }, 1000);
+      const timer = setInterval(() => {
+        setCountdown((prev) => Math.max(0, prev - 1));
+      }, 1000);
 
-    return () => clearInterval(timer);
+      return () => clearInterval(timer);
+    } else {
+      setCountdown(0);
+    }
   }, [status]);
 
   const fetchStatus = async () => {
@@ -142,18 +149,29 @@ export default function HomeHunterStatus() {
           <div>
             <div className="text-sm text-gray-500 mb-1">Next Worker Check</div>
             <div className="text-3xl font-bold text-indigo-400">
-              {status.pendingTasks > 0 && !status.hasWorkerLogs ? (
-                <span className="text-xl text-green-400">Ready now</span>
-              ) : status.nextExpectedWorkerRunAt && countdown > 0 ? (
-                formatCountdown(countdown)
-              ) : status.pendingTasks > 0 && countdown === 0 ? (
-                <span className="text-xl text-yellow-400">Ready — waiting for cron</span>
-              ) : (
+              {status.pendingTasks > 0 && status.secondsUntilNextExpectedRun !== null && status.secondsUntilNextExpectedRun > 0 ? (
+                <>
+                  {formatCountdown(countdown)}
+                  <div className="text-xs text-gray-500 mt-1">Automatic worker check</div>
+                </>
+              ) : status.pendingTasks > 0 && status.secondsUntilNextExpectedRun !== null && status.secondsUntilNextExpectedRun <= 0 ? (
+                <span className="text-xl text-yellow-400">Automatic worker check is due now</span>
+              ) : status.pendingTasks === 0 && status.runningTasks === 0 ? (
                 <span className="text-xl text-gray-500">Waiting for scheduled scan</span>
+              ) : (
+                <span className="text-xl text-gray-500">Calculating...</span>
               )}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              The Hunter worker checks the queue every 10 minutes and continues until all patent search tasks are processed.
+              {status.pendingTasks > 0 && !status.cronDetected ? (
+                <span className="text-yellow-400">⚠ Cron not detected yet. Connect your scheduler to run automatically every 10 minutes.</span>
+              ) : status.cronActive ? (
+                <span className="text-green-400">✓ {status.cronStatusLabel}</span>
+              ) : status.cronDetected && !status.cronActive ? (
+                <span className="text-yellow-400">⚠ {status.cronStatusLabel}</span>
+              ) : (
+                'The Hunter worker checks the queue every 10 minutes and continues until all patent search tasks are processed.'
+              )}
             </div>
           </div>
         </div>

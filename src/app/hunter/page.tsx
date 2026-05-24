@@ -21,10 +21,13 @@ interface HunterStatus {
   lastWorkerItemsSaved: number;
   workerIntervalMinutes: number;
   nextExpectedWorkerRunAt: string | null;
-  secondsUntilNextExpectedRun: number;
+  secondsUntilNextExpectedRun: number | null;
   lastRunCreatedAt: string | null;
   lastRunCompletedAt: string | null;
   lastRunName: string | null;
+  cronDetected: boolean;
+  cronActive: boolean;
+  cronStatusLabel: string;
 }
 
 interface WorkerLog {
@@ -93,8 +96,8 @@ export default function HunterPage() {
   // Update countdown every second
   useEffect(() => {
     const countdownInterval = setInterval(() => {
-      if (hunterStatus && hunterStatus.secondsUntilNextExpectedRun > 0) {
-        setCountdown(Math.max(0, hunterStatus.secondsUntilNextExpectedRun - 1));
+      if (hunterStatus && hunterStatus.secondsUntilNextExpectedRun !== null && hunterStatus.secondsUntilNextExpectedRun > 0) {
+        setCountdown((prev) => Math.max(0, prev - 1));
       } else {
         setCountdown(0);
       }
@@ -105,8 +108,10 @@ export default function HunterPage() {
 
   // Initialize countdown when status changes
   useEffect(() => {
-    if (hunterStatus) {
-      setCountdown(hunterStatus.secondsUntilNextExpectedRun);
+    if (hunterStatus && hunterStatus.secondsUntilNextExpectedRun !== null) {
+      setCountdown(Math.max(0, hunterStatus.secondsUntilNextExpectedRun));
+    } else {
+      setCountdown(0);
     }
   }, [hunterStatus]);
 
@@ -670,44 +675,57 @@ export default function HunterPage() {
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Next Worker Batch</div>
                   <div className="text-3xl font-bold text-indigo-400">
-                    {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs ? (
-                      // Tasks exist but no worker log yet - ready to process now
-                      <span className="text-xl text-green-400">Ready now</span>
-                    ) : hunterStatus.nextExpectedWorkerRunAt && countdown > 0 ? (
+                    {hunterStatus.pendingTasks > 0 && hunterStatus.secondsUntilNextExpectedRun !== null && hunterStatus.secondsUntilNextExpectedRun > 0 ? (
                       // Countdown active
-                      formatCountdown(countdown)
-                    ) : hunterStatus.pendingTasks > 0 && countdown === 0 ? (
+                      <>
+                        {formatCountdown(countdown)}
+                        <div className="text-xs text-gray-500 mt-1">Automatic worker check</div>
+                      </>
+                    ) : hunterStatus.pendingTasks > 0 && hunterStatus.secondsUntilNextExpectedRun !== null && hunterStatus.secondsUntilNextExpectedRun <= 0 ? (
                       // Countdown expired but tasks still pending
-                      <span className="text-xl text-yellow-400">Ready — waiting for cron</span>
+                      <span className="text-xl text-yellow-400">Automatic worker check is due now</span>
                     ) : hunterStatus.pendingTasks === 0 && hunterStatus.runningTasks === 0 && !hunterStatus.hasActiveRun ? (
                       // No active run
                       <span className="text-xl text-gray-500">No active run</span>
-                    ) : hunterStatus.hasWorkerLogs && hunterStatus.pendingTasks === 0 ? (
+                    ) : hunterStatus.pendingTasks === 0 ? (
                       // All tasks completed
-                      <span className="text-xl text-gray-500">Waiting for first worker check</span>
+                      <span className="text-xl text-gray-500">Waiting for scheduled scan</span>
                     ) : (
                       // Default fallback
-                      <span className="text-xl text-gray-500">Waiting for first worker check</span>
+                      <span className="text-xl text-gray-500">Calculating...</span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs ? (
-                      <>Click "Process First Batch Now" below to start processing tasks.</>
-                    ) : hunterStatus.nextExpectedWorkerRunAt && countdown > 0 ? (
-                      'Cron checks the queue every 10 minutes and processes the next batch.'
-                    ) : hunterStatus.pendingTasks > 0 && countdown === 0 ? (
-                      'Click "Process Next Batch Now" below or wait for the cron worker.'
-                    ) : hunterStatus.pendingTasks === 0 && hunterStatus.runningTasks === 0 && !hunterStatus.hasActiveRun ? (
-                      'Start a Hunter run to begin scanning for bottleneck opportunities.'
+                  <div className="text-xs mt-2">
+                    {hunterStatus.pendingTasks > 0 && !hunterStatus.cronDetected ? (
+                      <div className="text-yellow-400 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Cron not detected yet. Connect your scheduler to run automatically every 10 minutes.</span>
+                      </div>
+                    ) : hunterStatus.cronActive ? (
+                      <div className="text-green-400 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{hunterStatus.cronStatusLabel}</span>
+                      </div>
+                    ) : hunterStatus.cronDetected && !hunterStatus.cronActive ? (
+                      <div className="text-yellow-400 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{hunterStatus.cronStatusLabel}</span>
+                      </div>
                     ) : (
-                      'Start a Hunter run, then process the first batch. After cron is connected, this timer will track the next expected 10-minute worker check.'
+                      <div className="text-gray-500">Worker route: /api/cron/hunter-process • Schedule: every 10 minutes</div>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Process First Batch Button - Show when ready */}
-              {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs && (
+              {hunterStatus.pendingTasks > 0 && (!hunterStatus.hasWorkerLogs || (hunterStatus.secondsUntilNextExpectedRun !== null && hunterStatus.secondsUntilNextExpectedRun <= 0)) && (
                 <div className="mt-6 pt-6 border-t border-gray-800">
                   <button
                     onClick={handleProcessNext}
@@ -728,8 +746,8 @@ export default function HunterPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>Process First Batch Now</span>
-                        <span className="text-sm opacity-75">({hunterStatus.pendingTasks} tasks queued)</span>
+                        <span>{hunterStatus.hasWorkerLogs ? 'Run Worker Check Now' : 'Process First Batch Now'}</span>
+                        <span className="text-sm opacity-75">({hunterStatus.pendingTasks} tasks {hunterStatus.hasWorkerLogs ? 'remaining' : 'queued'})</span>
                       </>
                     )}
                   </button>
@@ -737,7 +755,7 @@ export default function HunterPage() {
               )}
 
               {/* Process Next Batch Button - Show when countdown expired */}
-              {hunterStatus.pendingTasks > 0 && hunterStatus.hasWorkerLogs && countdown === 0 && (
+              {hunterStatus.pendingTasks > 0 && hunterStatus.hasWorkerLogs && hunterStatus.secondsUntilNextExpectedRun !== null && hunterStatus.secondsUntilNextExpectedRun > 0 && countdown === 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-800">
                   <button
                     onClick={handleProcessNext}
