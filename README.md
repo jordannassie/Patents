@@ -1,40 +1,52 @@
-# Patents
+# PatentBoom
 
-A Next.js application configured for deployment on [Netlify](https://www.netlify.com/).
+AI-powered patent opportunity engine that searches old/expired patent records, identifies modern technology upgrade opportunities, and generates possible new venture and new patent improvement directions.
 
-## Getting Started
+## Required Environment Variables
 
-Install dependencies and run the development server:
+Add these to your Netlify deployment:
 
-```bash
-npm install
-npm run dev
+```
+CRON_SECRET=your-secret-key
+NEXT_PUBLIC_SITE_URL=https://your-site.netlify.app
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+USPTO_API_KEY=your-uspto-key
+PATENTSVIEW_API_KEY=your-patentsview-key
+OPENAI_API_KEY=your-openai-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Automated Hunter Engine
 
-## Deploy to Netlify
+PatentBoom uses Netlify Scheduled Functions to automatically:
 
-1. Push this repository to GitHub.
-2. In the [Netlify dashboard](https://app.netlify.com/), click **Add new site → Import an existing project**.
-3. Connect your GitHub account and select the `jordannassie/Patents` repository.
-4. Netlify will detect the settings from `netlify.toml` automatically:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `.next`
-   - **Plugin:** `@netlify/plugin-nextjs`
-5. Click **Deploy site**.
+1. **Process Hunter Queue** - Every 10 minutes (`hunter-process`)
+   - Checks for pending Hunter tasks
+   - Processes up to 2 tasks per batch
+   - Runs AI analysis on qualified candidates
+   - Saves opportunities to database
 
-Alternatively, use the Netlify CLI:
+2. **Daily Scout Scan** - Every day at 7:00 AM UTC (`hunter-daily`)
+   - Creates a daily scout run
+   - Scans 5 high-value bottleneck categories
+   - 2 queries per category
+   - Up to 20 AI analyses
 
-```bash
-npm install -g netlify-cli
-netlify init
-netlify deploy --prod
-```
+3. **Weekly Deep Scan** - Mondays at 7:30 AM UTC (`hunter-weekly`)
+   - Creates a comprehensive weekly run
+   - Scans all bottleneck categories
+   - 3 queries per category
+   - Up to 75 AI analyses
 
-## Tech Stack
+## Manual Override
 
-- [Next.js](https://nextjs.org/) (App Router)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Netlify Next.js Runtime](https://docs.netlify.com/frameworks/next-js/overview/)
+Advanced Controls in `/hunter` allow manual triggering for testing:
+- Start Scout Scan
+- Create Custom Scan
+- Run Worker Check Now
+
+## Legal Disclaimers
+
+Patent status and expiration estimates are informational only. Attorney review is required before relying on any patent status, commercialization strategy, or new patent filing.
+
+This app does not provide legal advice and does not guarantee that patents are safe to copy or that new patents are guaranteed to be patentable.

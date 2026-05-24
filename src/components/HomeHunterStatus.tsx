@@ -164,11 +164,11 @@ export default function HomeHunterStatus() {
             </div>
             <div className="text-xs text-gray-500 mt-1">
               {status.pendingTasks > 0 && !status.cronDetected ? (
-                <span className="text-yellow-400">⚠ Cron not detected yet. Connect your scheduler to run automatically every 10 minutes.</span>
+                <span className="text-yellow-400">⚠ Automation not connected yet. Scheduled functions or external cron must call the worker endpoint every 10 minutes.</span>
               ) : status.cronActive ? (
-                <span className="text-green-400">✓ {status.cronStatusLabel}</span>
+                <span className="text-green-400">✓ Automation active</span>
               ) : status.cronDetected && !status.cronActive ? (
-                <span className="text-yellow-400">⚠ {status.cronStatusLabel}</span>
+                <span className="text-yellow-400">⚠ Automation delayed — no cron check in the last 15 minutes</span>
               ) : (
                 'The Hunter worker checks the queue every 10 minutes and continues until all patent search tasks are processed.'
               )}

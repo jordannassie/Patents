@@ -7,3 +7,19 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+[functions]
+  directory = "netlify/functions"
+
+[[functions]]
+  name = "hunter-process"
+  schedule = "*/10 * * * *"
+
+[[functions]]
+  name = "hunter-daily"
+  schedule = "0 7 * * *"
+
+[[functions]]
+  name = "hunter-weekly"
+  schedule = "30 7 * * 1"
+
