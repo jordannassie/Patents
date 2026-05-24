@@ -21,19 +21,38 @@ export default function SearchPage() {
   const [category, setCategory] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     setIsSearching(true);
 
-    // Simulate search - navigate to results after a brief delay
-    setTimeout(() => {
-      const params = new URLSearchParams();
-      params.set("q", query);
-      if (category) params.set("category", category);
-      router.push(`/results?${params.toString()}`);
-    }, 1500);
+    try {
+      // Call patent search API
+      const response = await fetch("/api/patents/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          market: category || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Search failed");
+      }
+
+      const data = await response.json();
+
+      // Redirect to results page with searchId
+      router.push(`/results?searchId=${data.searchId}`);
+    } catch (error) {
+      console.error("Search error:", error);
+      setIsSearching(false);
+      alert("Search failed. Please try again.");
+    }
   };
 
   return (
