@@ -25,6 +25,16 @@ export default function Navigation() {
             </Link>
             <div className="hidden md:flex md:gap-6">
               <Link
+                href="/hunter"
+                className={`text-sm font-medium transition-colors ${
+                  pathname === "/hunter" || pathname.startsWith("/hunter")
+                    ? "text-white"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Hunter
+              </Link>
+              <Link
                 href="/search"
                 className={`text-sm font-medium transition-colors ${
                   isActive("/search")
@@ -33,6 +43,16 @@ export default function Navigation() {
                 }`}
               >
                 Search
+              </Link>
+              <Link
+                href="/hunter/runs"
+                className={`text-sm font-medium transition-colors ${
+                  pathname === "/hunter/runs"
+                    ? "text-white"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Runs
               </Link>
               <Link
                 href="/saved"
@@ -47,10 +67,10 @@ export default function Navigation() {
             </div>
           </div>
           <Link
-            href="/search"
-            className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            href="/hunter"
+            className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
-            Start Searching
+            Launch Hunter
           </Link>
         </div>
       </div>

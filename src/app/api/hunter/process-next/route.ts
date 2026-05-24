@@ -191,8 +191,12 @@ export async function POST(request: Request) {
             break;
           }
 
-          // TODO: Optionally call /api/patents/analyze here if we want full AI reports
-          // For now, just save with pre-AI scores
+          // AI Analysis Strategy:
+          // The Hunter saves opportunities with pre-AI scores first.
+          // Full AI analysis can be triggered separately via /api/patents/analyze.
+          // This design saves costs by pre-filtering candidates before expensive AI calls.
+          // UI displays "Pre-AI Candidate" badge when opportunity_score is null,
+          // and "AI Report Ready" badge when a full AI report exists.
           
           const { error: itemError } = await supabase
             .from('opportunity_hunter_items')

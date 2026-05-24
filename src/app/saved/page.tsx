@@ -9,6 +9,28 @@ export default function SavedPage() {
           Your pipeline of patent opportunities and venture ideas
         </p>
 
+        {/* Info Banner */}
+        <div className="mt-6 rounded-lg border border-indigo-800 bg-indigo-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <svg className="h-5 w-5 text-indigo-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm text-indigo-300">
+                Hunter Engine opportunities appear on the{' '}
+                <Link href="/hunter" className="font-medium underline hover:text-indigo-200">
+                  Hunter dashboard
+                </Link>
+                {' '}and in{' '}
+                <Link href="/hunter/runs" className="font-medium underline hover:text-indigo-200">
+                  Hunter runs
+                </Link>
+                . This page shows manually saved opportunities from Search.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Empty State */}
         <div className="mt-12 rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-zinc-800">
@@ -35,10 +57,10 @@ export default function SavedPage() {
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/search"
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90"
+              href="/hunter"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90"
             >
-              Start Searching
+              Launch Hunter
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -54,10 +76,10 @@ export default function SavedPage() {
               </svg>
             </Link>
             <Link
-              href="/results?q=blockchain"
+              href="/search"
               className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-zinc-700"
             >
-              Browse Examples
+              Manual Search
             </Link>
           </div>
         </div>

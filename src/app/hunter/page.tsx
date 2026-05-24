@@ -261,16 +261,46 @@ export default function HunterPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            PatentBoom Hunter Engine
-          </h1>
-          <p className="text-gray-400">
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              PatentBoom Hunter Engine
+            </h1>
+            <span className="px-3 py-1 text-xs font-bold text-green-400 bg-green-900/30 border border-green-700 rounded-full uppercase tracking-wider">
+              LIVE AUTOMATION
+            </span>
+          </div>
+          <p className="text-gray-400 mb-4">
             Automated bottleneck intelligence for discovering patent-backed venture opportunities.
           </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Hunter is the main engine. Manual Search is for one-off research.
+          </p>
+
+          {/* Quick Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowControls(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+              Start New Run
+            </button>
+            <Link
+              href="/hunter/runs"
+              className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors border border-gray-700 inline-flex items-center"
+            >
+              View Runs
+            </Link>
+            <Link
+              href="/search"
+              className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors border border-gray-700 inline-flex items-center"
+            >
+              Manual Search
+            </Link>
+          </div>
         </div>
 
         {/* Engine Status Hero */}
-        {hunterStatus && (
+        {hunterStatus ? (
           <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-8 mb-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5"></div>
             <div className="relative">
@@ -313,6 +343,19 @@ export default function HunterPage() {
                     Cron checks the queue every 10 minutes and processes the next batch.
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-8 mb-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5"></div>
+            <div className="relative flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-3 mb-3">
+                  <div className="w-4 h-4 rounded-full bg-gray-600 animate-pulse"></div>
+                  <span className="text-xl font-medium text-gray-400">Connecting to Hunter Engine...</span>
+                </div>
+                <p className="text-sm text-gray-600">Loading automation status</p>
               </div>
             </div>
           </div>
@@ -458,7 +501,18 @@ export default function HunterPage() {
               {opportunities.map((opp) => (
                 <div key={opp.id} className="bg-gray-800 rounded-lg p-4 flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-white font-medium mb-1">{opp.title}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-white font-medium">{opp.title}</h3>
+                      {opp.opportunity_score ? (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-green-900/50 text-green-400 rounded">
+                          AI Report Ready
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
+                          Pre-AI Candidate
+                        </span>
+                      )}
+                    </div>
                     <div className="flex gap-2 text-xs">
                       <span className="text-gray-500">{opp.category}</span>
                       <span className="text-gray-600">•</span>
@@ -490,6 +544,10 @@ export default function HunterPage() {
               Saved opportunities will appear here as the Hunter finds high-scoring patent ideas.
             </div>
           )}
+          <div className="mt-4 text-xs text-gray-600">
+            Note: Pre-AI Candidates are saved based on pre-scoring only. 
+            Full AI analysis can be run separately for detailed reports.
+          </div>
         </div>
 
         {/* Run Controls */}
