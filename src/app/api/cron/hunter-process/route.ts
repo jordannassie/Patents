@@ -44,6 +44,7 @@ export async function GET(request: Request) {
         body: JSON.stringify({
           maxTasks: 2,
           maxAiAnalyses: 4,
+          source: 'cron',
         }),
       }
     );

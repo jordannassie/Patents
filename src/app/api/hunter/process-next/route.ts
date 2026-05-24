@@ -29,11 +29,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const supabase = getSupabaseAdmin();
+  let workerLogId: string | null = null;
+
   try {
     const body = await request.json();
-    const { maxTasks = 2, maxAiAnalyses = 4 } = body;
+    const { maxTasks = 2, maxAiAnalyses = 4, source = 'manual' } = body;
 
-    const supabase = getSupabaseAdmin();
+    // Create worker log entry
+    const { data: workerLog, error: logError } = await supabase
+      .from('hunter_worker_logs')
+      .insert({
+        source: source === 'cron' ? 'cron' : 'manual',
+        status: 'started',
+        started_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (logError) {
+      console.error('[Process Next] Failed to create worker log:', logError);
+    } else {
+      workerLogId = workerLog?.id || null;
+    }
 
     // Find the oldest running Hunter run with pending tasks
     const { data: runs } = await supabase
@@ -44,6 +62,18 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (!runs || runs.length === 0) {
+      // Update worker log to idle
+      if (workerLogId) {
+        await supabase
+          .from('hunter_worker_logs')
+          .update({
+            status: 'idle',
+            message: 'No pending hunter tasks',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', workerLogId);
+      }
+
       return NextResponse.json({
         status: 'idle',
         message: 'No pending hunter tasks.',
@@ -72,6 +102,19 @@ export async function POST(request: Request) {
           pending_tasks: 0,
         })
         .eq('id', run.id);
+
+      // Update worker log
+      if (workerLogId) {
+        await supabase
+          .from('hunter_worker_logs')
+          .update({
+            status: 'completed',
+            run_id: run.id,
+            message: `Run ${run.id} completed`,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', workerLogId);
+      }
 
       return NextResponse.json({
         status: 'completed',
@@ -236,6 +279,24 @@ export async function POST(request: Request) {
       .update(updateData)
       .eq('id', run.id);
 
+    // Update worker log with results
+    if (workerLogId) {
+      await supabase
+        .from('hunter_worker_logs')
+        .update({
+          status: pendingTasks === 0 ? 'completed' : 'completed',
+          run_id: run.id,
+          tasks_processed: tasks.length,
+          ai_analyses_used: maxAiAnalyses - aiAnalysesRemaining,
+          items_saved: totalSaved,
+          message: pendingTasks === 0 
+            ? `Run completed. Saved ${totalSaved} opportunities.`
+            : `Processed ${tasks.length} tasks. ${pendingTasks} tasks remaining.`,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', workerLogId);
+    }
+
     return NextResponse.json({
       status: pendingTasks === 0 ? 'completed' : 'processing',
       runId: run.id,
@@ -249,6 +310,20 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('[Process Next] Error:', error);
+
+    // Update worker log to failed
+    if (workerLogId) {
+      const supabase = getSupabaseAdmin();
+      await supabase
+        .from('hunter_worker_logs')
+        .update({
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', workerLogId);
+    }
+
     return NextResponse.json(
       {
         error: 'Failed to process tasks',
