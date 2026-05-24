@@ -64,7 +64,36 @@ export async function searchPatents(
   console.log("[Patent Provider] PATENTSVIEW_API_KEY exists:", !!patentsViewKey);
   console.log("[Patent Provider] USPTO_API_KEY exists:", !!usptoKey);
 
-  // Try PatentsView API first (preferred)
+  // Try USPTO ODP API first (preferred)
+  if (usptoKey) {
+    console.log("[Patent Provider] using provider: USPTO ODP");
+    try {
+      const results = await searchUsptoOdpPatents(query, market);
+      if (results.length > 0) {
+        console.log("[Patent Provider] USPTO ODP success, results:", results.length);
+        return {
+          results,
+          provider: "uspto_odp",
+          isDemo: false,
+        };
+      }
+      console.log("[Patent Provider] USPTO ODP returned 0 results");
+    } catch (error) {
+      console.error("[Patent Provider] USPTO ODP error:", error);
+      const errorInfo = error instanceof Error ? error.message : "Unknown error";
+      
+      console.warn("[Patent Provider] USPTO ODP failed, returning demo data");
+      return {
+        results: getDemoPatentResults(query, market),
+        provider: "demo",
+        isDemo: true,
+        providerError: `USPTO ODP failed: ${errorInfo}`,
+      };
+    }
+  }
+
+  // Try PatentsView API as fallback (if key exists)
+  // Note: PatentsView endpoint may have issues - keeping as fallback only
   if (patentsViewKey) {
     console.log("[Patent Provider] using provider: PatentsView");
     try {
@@ -81,60 +110,13 @@ export async function searchPatents(
     } catch (error) {
       console.error("[Patent Provider] PatentsView error:", error);
       const errorInfo = error instanceof Error ? error.message : "Unknown error";
-      console.log("[Patent Provider] falling back to next provider");
       
-      // Try USPTO if available
-      if (usptoKey) {
-        console.log("[Patent Provider] using provider: USPTO");
-        try {
-          const results = await searchUSPTO(query, market);
-          if (results.length > 0) {
-            console.log("[Patent Provider] USPTO success, results:", results.length);
-            return {
-              results,
-              provider: "uspto",
-              isDemo: false,
-            };
-          }
-        } catch (usptoError) {
-          console.error("[Patent Provider] USPTO error:", usptoError);
-        }
-      }
-      
-      // Return demo with error info
-      console.warn("[Patent Provider] all APIs failed, returning demo data");
+      console.warn("[Patent Provider] PatentsView failed, returning demo data");
       return {
         results: getDemoPatentResults(query, market),
         provider: "demo",
         isDemo: true,
         providerError: `PatentsView failed: ${errorInfo}`,
-      };
-    }
-  }
-
-  // Try USPTO API if no PatentsView key
-  if (usptoKey) {
-    console.log("[Patent Provider] using provider: USPTO");
-    try {
-      const results = await searchUSPTO(query, market);
-      if (results.length > 0) {
-        console.log("[Patent Provider] USPTO success, results:", results.length);
-        return {
-          results,
-          provider: "uspto",
-          isDemo: false,
-        };
-      }
-    } catch (error) {
-      console.error("[Patent Provider] USPTO error:", error);
-      const errorInfo = error instanceof Error ? error.message : "Unknown error";
-      
-      console.warn("[Patent Provider] all APIs failed, returning demo data");
-      return {
-        results: getDemoPatentResults(query, market),
-        provider: "demo",
-        isDemo: true,
-        providerError: `USPTO failed: ${errorInfo}`,
       };
     }
   }
@@ -147,6 +129,163 @@ export async function searchPatents(
     isDemo: true,
     providerError: "No API keys configured",
   };
+}
+
+/**
+ * Search using USPTO Open Data Portal API
+ * https://developer.uspto.gov/api-catalog
+ */
+async function searchUsptoOdpPatents(
+  query: string,
+  market?: string
+): Promise<PatentResult[]> {
+  const apiKey = process.env.USPTO_API_KEY;
+  
+  // USPTO ODP Search API endpoint
+  const url = "https://api.uspto.gov/search/v1/patent";
+  
+  console.log("[Patent Provider] request url: https://api.uspto.gov/search/v1/patent");
+
+  // Build search request
+  const requestBody = {
+    q: query,
+    rows: MAX_RESULTS_PER_SEARCH,
+    start: 0,
+    sort: "date desc",
+    fl: [
+      "patentNumber",
+      "inventionTitle",
+      "abstractText",
+      "filingDate",
+      "grantDate",
+      "applicantName",
+      "inventorName",
+      "cpcClassificationText"
+    ].join(",")
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-KEY": apiKey || "",
+      "api-key": apiKey || "",
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  console.log("[Patent Provider] response status:", response.status);
+  console.log("[Patent Provider] response ok:", response.ok);
+
+  if (!response.ok) {
+    const bodyText = await response.text();
+    const bodyPreview = bodyText.substring(0, 1000);
+    
+    console.error("[Patent Provider] live API failed:", {
+      provider: "uspto_odp",
+      url: "https://api.uspto.gov/search/v1/patent",
+      status: response.status,
+      statusText: response.statusText,
+      bodyPreview,
+    });
+    
+    throw new Error(
+      `USPTO ODP API error: ${response.status} ${response.statusText}. Body: ${bodyPreview}`
+    );
+  }
+
+  const data = await response.json();
+  
+  // USPTO ODP response structure may vary - handle multiple formats
+  const patents = data.response?.docs || data.docs || data.results || data.patents || [];
+
+  console.log("[Patent Provider] parsed results count:", patents.length);
+
+  if (patents.length === 0) {
+    console.log("[Patent Provider] no patents returned from USPTO ODP");
+    return [];
+  }
+
+  // Defensively map USPTO fields to our format
+  return patents.slice(0, MAX_RESULTS_PER_SEARCH).map((patent: any) => {
+    // Try multiple possible field names
+    const patentNumber = 
+      patent.patentNumber || 
+      patent.patent_number || 
+      patent.applicationNumberText || 
+      patent.application_number || 
+      "Unknown";
+    
+    const title = 
+      patent.inventionTitle || 
+      patent.title || 
+      patent.patent_title || 
+      "No title available";
+    
+    const abstract = 
+      patent.abstractText || 
+      patent.abstract || 
+      patent.patent_abstract || 
+      "No abstract available";
+    
+    const filingDate = 
+      patent.filingDate || 
+      patent.filing_date || 
+      patent.app_date || 
+      null;
+    
+    const grantDate = 
+      patent.grantDate || 
+      patent.grant_date || 
+      patent.patent_date || 
+      null;
+    
+    const assignee = 
+      patent.applicantName || 
+      patent.assignee || 
+      patent.assignee_organization || 
+      null;
+    
+    // Handle inventors - could be string or array
+    let inventors = null;
+    if (patent.inventorName) {
+      inventors = Array.isArray(patent.inventorName) 
+        ? patent.inventorName.join(", ") 
+        : patent.inventorName;
+    } else if (patent.inventors) {
+      inventors = Array.isArray(patent.inventors)
+        ? patent.inventors.map((inv: any) => inv.inventor_last_name || inv.name || inv).join(", ")
+        : patent.inventors;
+    }
+    
+    // Handle CPC codes
+    let cpcCodes = null;
+    if (patent.cpcClassificationText) {
+      cpcCodes = Array.isArray(patent.cpcClassificationText)
+        ? patent.cpcClassificationText.join(", ")
+        : patent.cpcClassificationText;
+    } else if (patent.cpc_codes) {
+      cpcCodes = Array.isArray(patent.cpc_codes)
+        ? patent.cpc_codes.join(", ")
+        : patent.cpc_codes;
+    }
+
+    return {
+      patent_number: patentNumber,
+      title,
+      abstract,
+      filing_date: filingDate,
+      grant_date: grantDate,
+      assignee,
+      inventors,
+      cpc_codes: cpcCodes,
+      status_estimate: estimatePatentStatus(grantDate, filingDate),
+      source_url: `https://patents.google.com/patent/US${patentNumber}`,
+      source: "uspto_odp",
+      is_demo: false,
+      raw_json: patent,
+    };
+  });
 }
 
 /**
@@ -252,16 +391,16 @@ async function searchPatentsView(
 }
 
 /**
- * Search using USPTO API (fallback)
- * Note: USPTO API implementation may vary - adjust based on actual API
+ * Search using USPTO API (legacy fallback - deprecated)
+ * Note: This is a placeholder. USPTO ODP is now the primary USPTO provider.
  */
 async function searchUSPTO(
   query: string,
   market?: string
 ): Promise<PatentResult[]> {
-  // Placeholder: USPTO API implementation would go here
-  // For now, return empty to trigger demo data
-  throw new Error("USPTO API not yet implemented");
+  // This function is deprecated in favor of searchUsptoOdpPatents
+  // Kept for backwards compatibility only
+  throw new Error("Legacy USPTO API not implemented - use USPTO ODP instead");
 }
 
 /**
