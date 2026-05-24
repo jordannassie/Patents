@@ -4,21 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const MARKET_CATEGORIES = [
-  "AI Agents & Autonomous Software",
-  "AI Safety / Authorization / Governance",
-  "Cybersecurity & Data Protection",
-  "Crypto / Digital Assets / Wallet Security",
-  "Payments / Fraud / Fintech Infrastructure",
-  "Robotics & Autonomous Machines",
-  "Defense / Aerospace / Command Systems",
-  "Healthcare AI / Medical Automation",
-  "Energy / Grid / Climate Infrastructure",
-  "Semiconductors / Edge / Advanced Computing",
-  "Quantum / Cryptography / Secure Computing",
-  "Digital Identity / Biometrics / Authentication",
-  "Supply Chain / Logistics / Industrial Automation",
-  "Insurance / Risk / Compliance Infrastructure",
-  "Autonomous Vehicles / Drones / Mobility",
+  "Compute Bottleneck",
+  "Energy / Grid Bottleneck",
+  "AI-Agent Control Bottleneck",
+  "Cybersecurity / Data Exfiltration Bottleneck",
+  "Digital Identity / Deepfake Trust Bottleneck",
+  "Robotics Safety Bottleneck",
+  "Defense Autonomy / Command Bottleneck",
+  "Healthcare Labor / Liability Bottleneck",
+  "Payments / Fraud Bottleneck",
+  "Crypto Irreversible Transaction Bottleneck",
+  "Semiconductor / Edge Compute Bottleneck",
+  "Compliance / Audit / Liability Bottleneck",
 ];
 
 export default function SearchPage() {
@@ -66,16 +63,20 @@ export default function SearchPage() {
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Search Patent Opportunities
+            Billion-Dollar Bottleneck Hunter
           </h1>
           <p className="mt-4 text-lg text-zinc-400">
-            Automatically search billion-dollar industries for likely expired
-            patent opportunities that can be modernized with AI, automation, and
-            infrastructure-layer business models.
+            Automatically search future bottlenecks for likely expired patent
+            opportunities that can be modernized into new AI-era ventures.
           </p>
           <p className="mt-2 text-sm text-zinc-500">
-            PatentBoom focuses on high-value categories with enterprise,
-            government, financial, infrastructure, or platform potential.
+            A bottleneck is an unavoidable constraint future markets must solve
+            to scale. PatentBoom hunts for old inventions that may solve those
+            constraints before the market fully realizes how valuable they are.
+          </p>
+          <p className="mt-3 text-xs text-zinc-600">
+            Framework: Future Bottleneck → Old Patent → Modern AI Upgrade → New
+            Venture → New Patent Filing
           </p>
         </div>
 
@@ -93,7 +94,7 @@ export default function SearchPage() {
               id="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Try: autonomous agent authorization, transaction fraud prevention, grid control system"
+              placeholder="Try: distributed compute scheduling, grid control authorization, agent permission system"
               className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSearching}
             />
@@ -173,11 +174,11 @@ export default function SearchPage() {
           </h2>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {[
-              "autonomous agent authorization",
-              "transaction fraud prevention",
-              "medical AI decision support",
-              "grid control authorization",
-              "cryptographic key management",
+              "distributed compute resource allocation",
+              "data exfiltration prevention",
+              "voice authentication fraud detection",
+              "robotic system safety control",
+              "cryptographic transaction verification",
             ].map((example) => (
               <button
                 key={example}

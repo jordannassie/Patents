@@ -205,17 +205,21 @@ async function generateOpenAIReport(patentResult: any) {
 
   const parsed = JSON.parse(responseText);
 
-  // Ensure all required fields exist with new score names
+  // Ensure all required fields exist with bottleneck-focused score names
+  // Map new scores to existing database fields for backwards compatibility
   return {
-    future_market_score: parsed.market_size_score || parsed.future_market_score || 50,
-    ai_upgrade_score: parsed.ai_upgrade_score || 50,
-    patentability_score: parsed.patentability_score || 50,
+    future_market_score: parsed.future_bottleneck_score || parsed.market_size_score || parsed.future_market_score || 50,
+    ai_upgrade_score: parsed.ai_acceleration_score || parsed.ai_upgrade_score || 50,
+    patentability_score: parsed.patentability_upgrade_score || parsed.patentability_score || 50,
     buildability_score: parsed.buildability_score || 50,
-    revenue_score: parsed.licensing_royalty_score || parsed.revenue_score || 50,
-    strategic_fit_score: parsed.infrastructure_control_score || parsed.network_effect_score || parsed.strategic_fit_score || 50,
-    // Store additional scores for enhanced reporting
-    network_effect_score: parsed.network_effect_score || 50,
+    revenue_score: parsed.revenue_potential_score || parsed.licensing_royalty_score || parsed.revenue_score || 50,
+    strategic_fit_score: parsed.market_inevitability_score || parsed.infrastructure_dependency_score || parsed.adoption_pressure_score || parsed.infrastructure_control_score || parsed.strategic_fit_score || 50,
+    // Store additional bottleneck-specific scores for enhanced reporting
+    bottleneck_score: parsed.future_bottleneck_score || 50,
+    market_inevitability_score: parsed.market_inevitability_score || 50,
+    scarcity_chokepoint_score: parsed.scarcity_chokepoint_score || 50,
     regulatory_pressure_score: parsed.regulatory_pressure_score || 50,
+    infrastructure_dependency_score: parsed.infrastructure_dependency_score || 50,
     summary: parsed.summary || "Analysis completed.",
     modernization_angles: parsed.modernization_angles || [],
     venture_concepts: parsed.venture_concepts || [],
@@ -230,25 +234,32 @@ async function generateOpenAIReport(patentResult: any) {
  * Build the AI analysis prompt
  */
 function buildAnalysisPrompt(patentResult: any): string {
-  return `You are an AI patent opportunity analyst and venture strategist specializing in high-value, infrastructure-layer business opportunities.
+  return `You are an AI patent opportunity analyst and venture strategist specializing in identifying future bottleneck inventions.
 
-You are reviewing an old patent record. Your job is NOT to suggest copying the old invention. Your job is to identify whether the old invention suggests a modern, new, non-obvious improvement that could become a new product, startup, or patent direction with billion-dollar market potential.
+Your job is to identify whether this old patent maps to a future bottleneck. A bottleneck is an unavoidable constraint that large markets must solve in order to scale.
 
-PRIORITIZE opportunities that could become:
-- Infrastructure companies (transaction rails, authorization layers, compliance infrastructure)
-- Enterprise platforms (mission-critical systems, risk engines, governance tools)
-- Government/defense applications (command systems, secure communications, critical infrastructure)
-- Financial infrastructure (payment rails, fraud detection, custody solutions)
-- Security standards (cybersecurity layers, access control, data protection)
-- Network effect businesses (platforms with strong lock-in and defensibility)
+Core thesis: "PatentBoom finds old inventions that become valuable when the future finally needs them."
 
-DEPRIORITIZE:
-- Small consumer apps
-- Content tools
-- Lifestyle products
-- Low-defensibility features
-- Ministry/religious tools
-- Low network-effect businesses
+You are reviewing an old patent record. Your job is NOT to suggest copying the old invention. Your job is to identify whether the old invention was too early but will become valuable when future bottlenecks become urgent.
+
+LOOK FOR CONSTRAINTS CREATED OR INTENSIFIED BY:
+- AI growth (compute demand, agent control, identity fraud)
+- Automation expansion (robotics safety, command systems, liability)
+- Energy demand (grid reliability, power storage, utility control)
+- Cybersecurity threats (data exfiltration, attack surfaces)
+- Digital identity crisis (deepfakes, synthetic media, fraud)
+- Autonomous machines (defense, vehicles, drones, industrial robots)
+- Healthcare labor shortages (automation, liability, patient safety)
+- Fintech risk (fraud detection, transaction verification, instant settlement)
+- Crypto irreversibility (wallet safety, scam prevention, pre-send checks)
+- Edge compute demand (trusted execution, hardware security, distributed processing)
+- Compliance liability (audit trails, regulatory proof, risk reduction)
+
+The best opportunities are old inventions that:
+- Were too early for their time
+- Solve constraints that become urgent as major markets scale
+- Can be modernized with AI, automation, or infrastructure upgrades
+- Address unavoidable bottlenecks (not optional features)
 
 Analyze this patent:
 
@@ -281,65 +292,70 @@ ${patentResult.status_estimate || "Unknown"}
 
 Return valid JSON only with this exact structure:
 {
-  "market_size_score": number (1-100, rate TAM potential: 85+ for $10B+ markets, 70+ for $1B+ markets),
-  "network_effect_score": number (1-100, rate lock-in and platform potential),
-  "regulatory_pressure_score": number (1-100, rate compliance/governance demand),
-  "ai_upgrade_score": number (1-100, rate AI/automation modernization potential),
-  "patentability_score": number (1-100, rate novel improvement potential),
-  "infrastructure_control_score": number (1-100, rate potential as critical infrastructure layer),
-  "licensing_royalty_score": number (1-100, rate IP licensing/royalty potential),
-  "buildability_score": number (1-100, rate technical feasibility with modern tools),
-  "summary": string (2-3 sentences explaining the original invention and why modernization creates enterprise/infrastructure opportunity),
-  "modernization_angles": string[] (5-7 specific modern technology upgrades focused on enterprise/infrastructure value),
+  "future_bottleneck_score": number (1-100, how critical this constraint becomes as markets scale),
+  "market_inevitability_score": number (1-100, how certain the market will demand this solution),
+  "scarcity_chokepoint_score": number (1-100, how much this controls access to scarce resources or capabilities),
+  "ai_acceleration_score": number (1-100, how much AI/automation intensifies the need for this),
+  "regulatory_pressure_score": number (1-100, compliance/governance urgency driving adoption),
+  "infrastructure_dependency_score": number (1-100, how foundational/critical this becomes for other systems),
+  "patentability_upgrade_score": number (1-100, novel improvement potential for new patent filing),
+  "licensing_royalty_score": number (1-100, IP licensing/royalty monetization potential),
+  "buildability_score": number (1-100, technical feasibility with modern tools),
+  "summary": string (2-3 sentences: what bottleneck this addresses, why it was too early, why it becomes valuable),
+  "modernization_angles": string[] (5-7 specific ways to modernize with AI/automation/infrastructure),
   "venture_concepts": [
     {
       "name": string,
       "description": string,
-      "target_customer": string (enterprise/government/financial institutions preferred),
-      "business_model": string (infrastructure/platform/licensing preferred)
+      "target_customer": string,
+      "business_model": string
     }
-  ] (2-3 venture concepts with billion-dollar potential),
-  "new_patent_directions": string[] (4-6 specific new patentable improvement directions for infrastructure/enterprise applications),
+  ] (2-3 venture concepts showing how to solve the bottleneck),
+  "new_patent_directions": string[] (4-6 specific new patentable improvement directions),
   "risks": string (paragraph listing risks and attorney review requirements)
 }
 
-Note: Use these updated score names in your response:
-- market_size_score (replaces future_market_score)
-- network_effect_score (new)
-- regulatory_pressure_score (new)
-- ai_upgrade_score (same)
-- patentability_score (same)
-- infrastructure_control_score (replaces strategic_fit_score)
-- licensing_royalty_score (replaces revenue_score)
-- buildability_score (same)
+Note: Use these score names in your response:
+- future_bottleneck_score
+- market_inevitability_score
+- scarcity_chokepoint_score
+- ai_acceleration_score
+- regulatory_pressure_score
+- infrastructure_dependency_score
+- patentability_upgrade_score
+- licensing_royalty_score
+- buildability_score
 
 Required analysis:
-1. Explain the original invention in plain English.
-2. Explain why it may have been too early or outdated.
-3. Identify modern technology upgrades for enterprise/infrastructure applications.
-4. Identify possible new patentable improvement directions with strong defensibility.
-5. Create 2-3 venture concepts with enterprise/government/financial focus.
-6. Identify risks and attorney-review issues.
+1. Identify the future bottleneck this patent addresses (what constraint it removes).
+2. Explain why the invention was too early for its time.
+3. Explain why this bottleneck becomes urgent as AI, automation, or infrastructure scales.
+4. Identify modern technology upgrades to solve the bottleneck better.
+5. Identify possible new patentable improvement directions.
+6. Create 2-3 venture concepts showing how to monetize the solution.
+7. Identify risks and attorney-review issues.
 
-Modern technology upgrades to consider (enterprise focus):
-- AI agents and autonomous decision-making systems
-- Pre-execution authorization and governance layers
-- Cybersecurity and data protection infrastructure
+Modern technology upgrades to consider:
+- AI agents and autonomous decision-making
+- Pre-execution authorization and governance
+- Real-time fraud detection and risk scoring
+- Biometric identity verification
+- Hardware-level security and trusted execution
+- Distributed computing and edge AI
+- Grid control and energy management
+- Medical automation and liability reduction
+- Transaction verification and wallet safety
+- Command systems and rules of engagement
+- Compliance dashboards and audit trails
 - Cryptographic protocols and secure computation
-- Transaction rails and payment infrastructure
-- Command and control systems
-- Medical AI and regulatory compliance
-- Grid control and energy infrastructure
-- Identity verification and authentication systems
-- Supply chain and logistics automation
-- Risk scoring and compliance engines
-- Hardware security and trusted execution
+
+Recommendation rules:
+- BUILD NOW: strong bottleneck, inevitable market demand, large enterprise/government/financial/infrastructure relevance, clear modernization path
+- STRONG WATCH: real bottleneck, but timing/patentability/build path needs more research
+- RESEARCH MORE: interesting but unclear market inevitability
+- SKIP: small feature, low defensibility, niche consumer idea, or not tied to a major bottleneck
 
 Rules:
-- Only recommend BUILD NOW if the idea has clear enterprise/government/financial/infrastructure potential and $1B+ TAM
-- STRONG WATCH if market is large but patentability or build path needs more research
-- RESEARCH MORE if useful but market size or defensibility unclear
-- SKIP if low defensibility, low market size, or just a feature
 - Do not give legal advice
 - Do not claim patentability is guaranteed
 - Do not claim the old patent is safe to copy
@@ -408,16 +424,16 @@ function generateDemoReport(patentResult: any) {
 
 /**
  * Calculate weighted opportunity score
- * Updated weights for infrastructure/enterprise focus
+ * Updated weights for bottleneck/inevitability focus
  */
 function calculateOpportunityScore(reportData: any): number {
   const weights = {
-    future_market: 0.25, // Increased: Market size is critical for $1B+ opportunities
-    ai_upgrade: 0.15, // AI modernization potential
+    future_market: 0.35, // Highest priority: Future bottleneck criticality
+    ai_upgrade: 0.15, // AI/automation acceleration potential
     patentability: 0.15, // New patent defensibility
     buildability: 0.15, // Technical feasibility
-    revenue: 0.15, // Licensing/royalty potential
-    strategic_fit: 0.15, // Infrastructure control/network effects
+    revenue: 0.1, // Revenue model / licensing potential
+    strategic_fit: 0.1, // Market inevitability / infrastructure dependency
   };
 
   const score =
@@ -433,15 +449,15 @@ function calculateOpportunityScore(reportData: any): number {
 
 /**
  * Get recommendation based on opportunity score
- * Updated logic for enterprise/infrastructure focus
+ * Updated logic for bottleneck/inevitability focus
  */
 function getRecommendation(score: number): string {
-  // BUILD NOW only for clear $1B+ enterprise/infrastructure opportunities
+  // BUILD NOW: strong bottleneck with inevitable market demand
   if (score >= 85) return "BUILD NOW";
-  // STRONG WATCH if large market but needs more research
+  // STRONG WATCH: real bottleneck but timing/patentability/build needs research
   if (score >= 70) return "STRONG WATCH";
-  // RESEARCH MORE if useful but unclear market/defensibility
+  // RESEARCH MORE: interesting but unclear market inevitability
   if (score >= 50) return "RESEARCH MORE";
-  // SKIP if low defensibility or low market size
+  // SKIP: small feature, low defensibility, or not tied to major bottleneck
   return "SKIP";
 }
