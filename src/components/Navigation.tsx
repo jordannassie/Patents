@@ -70,7 +70,7 @@ export default function Navigation() {
             href="/hunter"
             className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
-            Launch Hunter
+            View Live Engine
           </Link>
         </div>
       </div>

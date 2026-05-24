@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomeHunterStatus from "@/components/HomeHunterStatus";
 
 export default function Home() {
   return (
@@ -23,7 +24,7 @@ export default function Home() {
                 href="/hunter"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Launch Hunter
+                View Live Hunter Engine
                 <svg
                   className="h-5 w-5"
                   fill="none"
@@ -42,10 +43,17 @@ export default function Home() {
                 href="/search"
                 className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-zinc-800"
               >
-                Manual Search
+                Research Search
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Live Hunter Engine Status */}
+      <section className="border-b border-zinc-800">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <HomeHunterStatus />
         </div>
       </section>
 

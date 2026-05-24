@@ -322,33 +322,189 @@ export default function HunterPage() {
               LIVE AUTOMATION
             </span>
           </div>
-          <p className="text-gray-400 mb-4">
-            Automated bottleneck intelligence for discovering patent-backed venture opportunities.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Hunter is the main engine. Manual Search is for one-off research.
+          <p className="text-gray-400 mb-6">
+            Automated bottleneck intelligence scanning patent records for patent-backed venture opportunities.
           </p>
 
-          {/* Quick Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowControls(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-            >
-              Start New Run
-            </button>
+          {/* Primary CTA */}
+          <div className="flex gap-3 mb-4">
             <Link
               href="/hunter/runs"
-              className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors border border-gray-700 inline-flex items-center"
+              className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition-opacity inline-flex items-center gap-2"
             >
               View Runs
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
             <Link
               href="/search"
-              className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors border border-gray-700 inline-flex items-center"
+              className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors border border-gray-700 inline-flex items-center"
             >
-              Manual Search
+              Research Search
             </Link>
+          </div>
+
+          {/* Advanced Controls - Collapsible */}
+          <div className="border border-gray-800 rounded-lg overflow-hidden bg-gray-900/50">
+            <button
+              onClick={() => setShowControls(!showControls)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-800/50 transition-colors text-left"
+            >
+              <div>
+                <div className="font-semibold text-white">Advanced Controls</div>
+                <div className="text-sm text-gray-500">
+                  Manual controls for testing the worker queue. Normal operation is automated by cron.
+                </div>
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-400 transition-transform ${showControls ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showControls && (
+              <div className="p-4 bg-gray-900/50 space-y-4">
+                {/* Run Type */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-400">Run Type</label>
+                  <div className="flex gap-2">
+                    {['manual', 'daily_scout', 'weekly_deep'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setRunType(type as any)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          runType === type
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                        }`}
+                      >
+                        {type === 'manual' ? 'Custom Scan' : type === 'daily_scout' ? 'Daily Scout' : 'Weekly Deep'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-400">
+                    Categories ({selectedCategories.length} selected)
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-gray-800 rounded-lg p-3">
+                    {BOTTLENECK_CATEGORIES.map((category) => (
+                      <label key={category} className="flex items-center gap-2 text-sm hover:bg-gray-700 p-2 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => handleToggleCategory(category)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-gray-300">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Settings */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-400">Min Score</label>
+                    <input
+                      type="number"
+                      value={minScore}
+                      onChange={(e) => setMinScore(parseInt(e.target.value))}
+                      min="0"
+                      max="100"
+                      className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-400">Max AI Analyses</label>
+                    <input
+                      type="number"
+                      value={maxAiAnalyses}
+                      onChange={(e) => setMaxAiAnalyses(parseInt(e.target.value))}
+                      min="1"
+                      max="100"
+                      className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-400">Queries/Category</label>
+                    <input
+                      type="number"
+                      value={maxQueriesPerCategory}
+                      onChange={(e) => setMaxQueriesPerCategory(parseInt(e.target.value))}
+                      min="1"
+                      max="5"
+                      className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Scout Preset */}
+                <div className="bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-indigo-300 mb-1">Start Scout Scan</h3>
+                      <p className="text-xs text-gray-400 mb-2">
+                        4 high-value bottleneck categories • 1 query each • Up to 8 AI analyses
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {['AI-Agent Control', 'Cybersecurity', 'Crypto Transaction', 'Defense Autonomy'].map(cat => (
+                          <span key={cat} className="text-xs px-2 py-0.5 bg-indigo-900/50 text-indigo-300 rounded">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleQuickScout}
+                      disabled={loading}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
+                    >
+                      {loading ? 'Starting...' : 'Start Scout Scan'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleStartHunter}
+                    disabled={loading || selectedCategories.length === 0}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Starting...' : 'Create Custom Scan'}
+                  </button>
+                  <button
+                    onClick={handleProcessNext}
+                    disabled={processing}
+                    className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700"
+                  >
+                    {processing ? 'Processing...' : 'Run Worker Check Now'}
+                  </button>
+                </div>
+
+                {/* Scheduler Instructions */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 text-xs">
+                  <div className="font-semibold text-gray-300 mb-2">Scheduler Instructions</div>
+                  <div className="space-y-2 text-gray-400">
+                    <p>To fully automate PatentBoom, set external cron jobs:</p>
+                    <div className="bg-gray-900/50 rounded p-2 space-y-1 font-mono">
+                      <div>1. <span className="text-indigo-400">GET /api/cron/hunter-daily</span> - once per day</div>
+                      <div>2. <span className="text-indigo-400">GET /api/cron/hunter-weekly</span> - once per week</div>
+                      <div>3. <span className="text-indigo-400">GET /api/cron/hunter-process</span> - every 10 minutes</div>
+                    </div>
+                    <p className="text-xs text-gray-500">All require: Authorization: Bearer CRON_SECRET</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -907,162 +1063,6 @@ export default function HunterPage() {
           <div className="mt-4 text-xs text-gray-500">
             <span className="font-medium text-gray-400">AI Report Ready</span> means PatentBoom generated modernization angles, venture concepts, and possible new patent directions.
           </div>
-        </div>
-
-        {/* Run Controls */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <button
-            onClick={() => setShowControls(!showControls)}
-            className="w-full flex items-center justify-between text-left"
-          >
-            <h2 className="text-lg font-semibold text-white">Run Controls</h2>
-            <svg 
-              className={`w-5 h-5 text-gray-400 transition-transform ${showControls ? 'rotate-180' : ''}`}
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {showControls && (
-            <div className="mt-6 space-y-4">
-              {/* Run Type */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-400">Run Type</label>
-                <div className="flex gap-2">
-                  {['manual', 'daily_scout', 'weekly_deep'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setRunType(type as any)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                        runType === type
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {type === 'manual' ? 'Manual' : type === 'daily_scout' ? 'Daily Scout' : 'Weekly Deep'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-400">
-                  Categories ({selectedCategories.length} selected)
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-gray-800 rounded-lg p-3">
-                  {BOTTLENECK_CATEGORIES.map((category) => (
-                    <label key={category} className="flex items-center gap-2 text-sm hover:bg-gray-700 p-2 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => handleToggleCategory(category)}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-gray-300">{category}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Settings */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-400">Min Score</label>
-                  <input
-                    type="number"
-                    value={minScore}
-                    onChange={(e) => setMinScore(parseInt(e.target.value))}
-                    min="0"
-                    max="100"
-                    className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-400">Max AI Analyses</label>
-                  <input
-                    type="number"
-                    value={maxAiAnalyses}
-                    onChange={(e) => setMaxAiAnalyses(parseInt(e.target.value))}
-                    min="1"
-                    max="100"
-                    className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-400">Queries/Category</label>
-                  <input
-                    type="number"
-                    value={maxQueriesPerCategory}
-                    onChange={(e) => setMaxQueriesPerCategory(parseInt(e.target.value))}
-                    min="1"
-                    max="5"
-                    className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Quick Scout Preset */}
-              <div className="bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-indigo-300 mb-1">Quick Scout Run</h3>
-                    <p className="text-xs text-gray-400 mb-2">
-                      4 high-value bottleneck categories • 1 query each • Up to 8 AI analyses
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {['AI-Agent Control', 'Cybersecurity', 'Crypto Transaction', 'Defense Autonomy'].map(cat => (
-                        <span key={cat} className="text-xs px-2 py-0.5 bg-indigo-900/50 text-indigo-300 rounded">
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleQuickScout}
-                    disabled={loading}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
-                  >
-                    {loading ? 'Starting...' : 'Start Quick Scout'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleStartHunter}
-                  disabled={loading || selectedCategories.length === 0}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Starting...' : 'Start Manual Run'}
-                </button>
-                <button
-                  onClick={handleProcessNext}
-                  disabled={processing}
-                  className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700"
-                >
-                  {processing ? 'Processing...' : 'Process Next Batch Now'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer Note */}
-        <div className="mt-6 text-center text-xs text-gray-600">
-          Timer reflects the next expected cron check based on the latest recorded worker log. 
-          The external scheduler controls the actual trigger.
-        </div>
-
-        {/* View Runs Link */}
-        <div className="mt-4 text-center">
-          <Link href="/hunter/runs" className="text-indigo-400 hover:text-indigo-300 text-sm">
-            View All Hunter Runs →
-          </Link>
         </div>
       </div>
     </div>
