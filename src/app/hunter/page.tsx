@@ -10,6 +10,8 @@ interface HunterStatus {
   runningRunId: string | null;
   pendingTasks: number;
   runningTasks: number;
+  hasWorkerLogs: boolean;
+  hasActiveRun: boolean;
   lastWorkerStartedAt: string | null;
   lastWorkerCompletedAt: string | null;
   lastWorkerStatus: string | null;
@@ -210,11 +212,18 @@ export default function HunterPage() {
       }
 
       setShowControls(false);
+      
+      // Refresh all data immediately to show "Ready now" status
       await fetchAllData();
-      router.push(`/hunter/runs/${data.runId}`);
+      
+      // Scroll to the Engine Status Hero to show the "Ready now" timer
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      console.log(`Hunter run started: ${data.runId}, ${data.totalTasks} tasks queued`);
     } catch (error) {
       console.error('Hunter start error:', error);
       alert(error instanceof Error ? error.message : 'Failed to start hunter');
+    } finally {
       setLoading(false);
     }
   };
@@ -235,8 +244,10 @@ export default function HunterPage() {
         throw new Error(data.message || 'Failed to process tasks');
       }
 
+      // Refresh all data to show updated status and countdown
       await fetchAllData();
-      alert(data.message || 'Tasks processed successfully');
+      
+      console.log('Batch processed:', data.message || 'Success');
     } catch (error) {
       console.error('Process error:', error);
       alert(error instanceof Error ? error.message : 'Failed to process tasks');
@@ -274,10 +285,14 @@ export default function HunterPage() {
       }
 
       setShowControls(false);
+      
+      // Refresh all data immediately to show "Ready now" status
       await fetchAllData();
       
-      // Show success message
-      alert(`Quick Scout Run started! ${data.totalTasks || 0} tasks queued. Click "Process First Batch Now" to begin.`);
+      // Scroll to the Engine Status Hero to show the "Ready now" timer
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      console.log(`Quick Scout Run started: ${data.runId}, ${data.totalTasks} tasks queued`);
     } catch (error) {
       console.error('Quick Scout error:', error);
       alert(error instanceof Error ? error.message : 'Failed to start Quick Scout');
@@ -499,25 +514,101 @@ export default function HunterPage() {
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Next Worker Batch</div>
                   <div className="text-3xl font-bold text-indigo-400">
-                    {hunterStatus.nextExpectedWorkerRunAt ? (
-                      countdown > 0 ? (
-                        formatCountdown(countdown)
-                      ) : (
-                        <span className="text-xl text-yellow-400">Waiting for cron...</span>
-                      )
+                    {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs ? (
+                      // Tasks exist but no worker log yet - ready to process now
+                      <span className="text-xl text-green-400">Ready now</span>
+                    ) : hunterStatus.nextExpectedWorkerRunAt && countdown > 0 ? (
+                      // Countdown active
+                      formatCountdown(countdown)
+                    ) : hunterStatus.pendingTasks > 0 && countdown === 0 ? (
+                      // Countdown expired but tasks still pending
+                      <span className="text-xl text-yellow-400">Ready — waiting for cron</span>
+                    ) : hunterStatus.pendingTasks === 0 && hunterStatus.runningTasks === 0 && !hunterStatus.hasActiveRun ? (
+                      // No active run
+                      <span className="text-xl text-gray-500">No active run</span>
+                    ) : hunterStatus.hasWorkerLogs && hunterStatus.pendingTasks === 0 ? (
+                      // All tasks completed
+                      <span className="text-xl text-gray-500">Waiting for first worker check</span>
                     ) : (
+                      // Default fallback
                       <span className="text-xl text-gray-500">Waiting for first worker check</span>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {hunterStatus.nextExpectedWorkerRunAt ? (
+                    {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs ? (
+                      <>Click "Process First Batch Now" below to start processing tasks.</>
+                    ) : hunterStatus.nextExpectedWorkerRunAt && countdown > 0 ? (
                       'Cron checks the queue every 10 minutes and processes the next batch.'
+                    ) : hunterStatus.pendingTasks > 0 && countdown === 0 ? (
+                      'Click "Process Next Batch Now" below or wait for the cron worker.'
+                    ) : hunterStatus.pendingTasks === 0 && hunterStatus.runningTasks === 0 && !hunterStatus.hasActiveRun ? (
+                      'Start a Hunter run to begin scanning for bottleneck opportunities.'
                     ) : (
                       'Start a Hunter run, then process the first batch. After cron is connected, this timer will track the next expected 10-minute worker check.'
                     )}
                   </div>
                 </div>
               </div>
+
+              {/* Process First Batch Button - Show when ready */}
+              {hunterStatus.pendingTasks > 0 && !hunterStatus.hasWorkerLogs && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <button
+                    onClick={handleProcessNext}
+                    disabled={processing}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                  >
+                    {processing ? (
+                      <>
+                        <svg className="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Process First Batch Now</span>
+                        <span className="text-sm opacity-75">({hunterStatus.pendingTasks} tasks queued)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Process Next Batch Button - Show when countdown expired */}
+              {hunterStatus.pendingTasks > 0 && hunterStatus.hasWorkerLogs && countdown === 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <button
+                    onClick={handleProcessNext}
+                    disabled={processing}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                  >
+                    {processing ? (
+                      <>
+                        <svg className="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Process Next Batch Now</span>
+                        <span className="text-sm opacity-75">({hunterStatus.pendingTasks} tasks remaining)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

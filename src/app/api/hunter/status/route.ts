@@ -82,11 +82,17 @@ export async function GET() {
       status = 'failed';
     }
 
+    // Helper flags for UI
+    const hasWorkerLogs = !!latestWorkerLog;
+    const hasActiveRun = !!(runningRun || (latestRun && latestRun.status === 'running'));
+
     return NextResponse.json({
       status,
       runningRunId: runningRun?.id || null,
       pendingTasks,
       runningTasks,
+      hasWorkerLogs,
+      hasActiveRun,
       lastWorkerStartedAt: latestWorkerLog?.started_at || null,
       lastWorkerCompletedAt: latestWorkerLog?.completed_at || null,
       lastWorkerStatus: latestWorkerLog?.status || null,
