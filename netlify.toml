@@ -11,15 +11,12 @@
 [functions]
   directory = "netlify/functions"
 
-[[functions]]
-  name = "hunter-process"
+[functions.hunter-process]
   schedule = "*/10 * * * *"
 
-[[functions]]
-  name = "hunter-daily"
+[functions.hunter-daily]
   schedule = "0 7 * * *"
 
-[[functions]]
-  name = "hunter-weekly"
+[functions.hunter-weekly]
   schedule = "30 7 * * 1"
 
