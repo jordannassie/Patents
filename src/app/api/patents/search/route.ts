@@ -34,12 +34,20 @@ export async function POST(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     
+    console.log("[PatentBoom Search] Starting search request");
+    console.log("[PatentBoom Search] env supabase url exists:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("[PatentBoom Search] service key exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    
     // Parse request body
     const body = await request.json();
     const { query, market } = body;
+    
+    console.log("[PatentBoom Search] query:", query);
+    console.log("[PatentBoom Search] market:", market);
 
     // Validate query
     if (!query || typeof query !== "string" || query.trim().length === 0) {
+      console.log("[PatentBoom Search] validation failed: empty query");
       return NextResponse.json(
         { error: "Query is required and must be a non-empty string" },
         { status: 400 }
@@ -51,6 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Generate cache key
     const cacheKey = `${normalizedQuery}:${normalizedMarket || "all"}`;
+    console.log("[PatentBoom Search] cache key:", cacheKey);
 
     // Step 1: Check cache first
     const { data: cachedData, error: cacheError } = await supabaseAdmin
@@ -64,7 +73,7 @@ export async function POST(request: NextRequest) {
       const cacheAge = Date.now() - new Date(cachedData.created_at).getTime();
 
       if (cacheAge < CACHE_DURATION_MS) {
-        console.log(`Cache hit for query: "${query}"`);
+        console.log("[PatentBoom Search] cache hit - returning cached results");
 
         // Return cached results
         const cachedResults = cachedData.response_json as {
@@ -79,6 +88,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Cache expired, delete it
+        console.log("[PatentBoom Search] cache expired - deleting old cache");
         await supabaseAdmin
           .from("patent_api_cache")
           .delete()
@@ -87,11 +97,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Cache miss - call external patent API
-    console.log(`Cache miss for query: "${query}" - calling external API`);
+    console.log("[PatentBoom Search] cache miss - calling patent provider");
 
     const patentResults = await searchPatents(normalizedQuery, normalizedMarket);
+    console.log("[PatentBoom Search] results count:", patentResults.length);
+    console.log("[PatentBoom Search] is demo data:", patentResults[0]?.is_demo || false);
+    console.log("[PatentBoom Search] source:", patentResults[0]?.source || "unknown");
 
     // Step 3: Create patent_searches record
+    console.log("[PatentBoom Search] inserting into patent_searches table");
     const { data: searchRecord, error: searchError } = await supabaseAdmin
       .from("patent_searches")
       .insert({
@@ -104,14 +118,20 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (searchError || !searchRecord) {
-      console.error("Error creating search record:", searchError);
+      console.error("[PatentBoom Search] insert error:", searchError);
       return NextResponse.json(
-        { error: "Failed to create search record" },
+        { 
+          error: "Failed to create patent search",
+          details: searchError?.message || "Unknown database error"
+        },
         { status: 500 }
       );
     }
 
+    console.log("[PatentBoom Search] created search id:", searchRecord.id);
+
     // Step 4: Insert patent results
+    console.log("[PatentBoom Search] inserting into patent_results table");
     const resultsToInsert = patentResults.map((result) => ({
       search_id: searchRecord.id,
       patent_number: result.patent_number,
@@ -135,35 +155,52 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (insertError) {
-      console.error("Error inserting results:", insertError);
+      console.error("[PatentBoom Search] insert error:", insertError);
       return NextResponse.json(
-        { error: "Failed to insert patent results" },
+        { 
+          error: "Failed to insert patent results",
+          details: insertError?.message || "Unknown database error"
+        },
         { status: 500 }
       );
     }
 
+    console.log("[PatentBoom Search] inserted results:", insertedResults?.length || 0);
+
     // Step 5: Store in cache
+    console.log("[PatentBoom Search] storing in cache");
     const responseData = {
       searchId: searchRecord.id,
       results: insertedResults,
       resultCount: insertedResults?.length || 0,
     };
 
-    await supabaseAdmin.from("patent_api_cache").insert({
+    const { error: cacheInsertError } = await supabaseAdmin.from("patent_api_cache").insert({
       cache_key: cacheKey,
       query: normalizedQuery,
       market: normalizedMarket,
       response_json: responseData,
     });
 
-    // Step 6: Record API usage (if not demo data)
-    if (!patentResults[0]?.is_demo) {
-      await supabaseAdmin.from("patent_api_usage").insert({
-        provider: patentResults[0]?.source || "unknown",
-        endpoint: "search",
-        request_count: 1,
-      });
+    if (cacheInsertError) {
+      console.error("[PatentBoom Search] cache insert error:", cacheInsertError);
+      // Don't fail the request if cache insert fails
     }
+
+    // Step 6: Record API usage (even for demo data to track usage)
+    console.log("[PatentBoom Search] recording API usage");
+    const { error: usageError } = await supabaseAdmin.from("patent_api_usage").insert({
+      provider: patentResults[0]?.source || "unknown",
+      endpoint: "search",
+      request_count: 1,
+    });
+
+    if (usageError) {
+      console.error("[PatentBoom Search] usage tracking error:", usageError);
+      // Don't fail the request if usage tracking fails
+    }
+
+    console.log("[PatentBoom Search] search completed successfully");
 
     // Return response
     return NextResponse.json({
@@ -171,7 +208,7 @@ export async function POST(request: NextRequest) {
       cached: false,
     });
   } catch (error) {
-    console.error("Patent search error:", error);
+    console.error("[PatentBoom Search] fatal error:", error);
     return NextResponse.json(
       {
         error: "Internal server error during patent search",
