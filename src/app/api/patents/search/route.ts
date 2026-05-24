@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
     
     // Parse request body
     const body = await request.json();
-    const { query, market } = body;
+    const { query, market, bypassCache = false } = body;
     
     console.log("[PatentBoom Search] query:", query);
     console.log("[PatentBoom Search] market:", market);
+    console.log("[PatentBoom Search] bypassCache:", bypassCache);
 
     // Validate query
     if (!query || typeof query !== "string" || query.trim().length === 0) {
@@ -60,49 +61,70 @@ export async function POST(request: NextRequest) {
     // Generate cache key
     const cacheKey = `${normalizedQuery}:${normalizedMarket || "all"}`;
     console.log("[PatentBoom Search] cache key:", cacheKey);
+    
+    // Check if we have live API keys
+    const hasLiveKeys = !!(process.env.PATENTSVIEW_API_KEY || process.env.USPTO_API_KEY);
+    console.log("[PatentBoom Search] has live API keys:", hasLiveKeys);
 
-    // Step 1: Check cache first
-    const { data: cachedData, error: cacheError } = await supabaseAdmin
-      .from("patent_api_cache")
-      .select("*")
-      .eq("cache_key", cacheKey)
-      .single();
+    // Step 1: Check cache first (unless bypassCache is true)
+    if (!bypassCache) {
+      const { data: cachedData, error: cacheError } = await supabaseAdmin
+        .from("patent_api_cache")
+        .select("*")
+        .eq("cache_key", cacheKey)
+        .single();
 
-    if (cachedData && !cacheError) {
-      // Check if cache is still valid (less than 7 days old)
-      const cacheAge = Date.now() - new Date(cachedData.created_at).getTime();
+      if (cachedData && !cacheError) {
+        // Check if cache is still valid (less than 7 days old)
+        const cacheAge = Date.now() - new Date(cachedData.created_at).getTime();
 
-      if (cacheAge < CACHE_DURATION_MS) {
-        console.log("[PatentBoom Search] cache hit - returning cached results");
-
-        // Return cached results
-        const cachedResults = cachedData.response_json as {
-          searchId: string;
-          results: unknown[];
-        };
-
-        return NextResponse.json({
-          ...cachedResults,
-          cached: true,
-          resultCount: cachedResults.results.length,
-        });
-      } else {
-        // Cache expired, delete it
-        console.log("[PatentBoom Search] cache expired - deleting old cache");
-        await supabaseAdmin
-          .from("patent_api_cache")
-          .delete()
-          .eq("cache_key", cacheKey);
+        if (cacheAge < CACHE_DURATION_MS) {
+          const cachedResults = cachedData.response_json as {
+            searchId: string;
+            results: unknown[];
+          };
+          
+          // Check if cached data is demo AND we have live keys now
+          const isDemo = (cachedResults.results[0] as any)?.is_demo || false;
+          
+          if (isDemo && hasLiveKeys) {
+            console.log("[PatentBoom Search] cached demo data found but live keys exist - bypassing cache");
+            // Delete demo cache and proceed to live API
+            await supabaseAdmin
+              .from("patent_api_cache")
+              .delete()
+              .eq("cache_key", cacheKey);
+          } else {
+            console.log("[PatentBoom Search] cache hit - returning cached results");
+            return NextResponse.json({
+              ...cachedResults,
+              cached: true,
+              resultCount: cachedResults.results.length,
+            });
+          }
+        } else {
+          // Cache expired, delete it
+          console.log("[PatentBoom Search] cache expired - deleting old cache");
+          await supabaseAdmin
+            .from("patent_api_cache")
+            .delete()
+            .eq("cache_key", cacheKey);
+        }
       }
+    } else {
+      console.log("[PatentBoom Search] cache bypass requested");
     }
 
     // Step 2: Cache miss - call external patent API
     console.log("[PatentBoom Search] cache miss - calling patent provider");
 
-    const patentResults = await searchPatents(normalizedQuery, normalizedMarket);
-    console.log("[PatentBoom Search] results count:", patentResults.length);
-    console.log("[PatentBoom Search] is demo data:", patentResults[0]?.is_demo || false);
-    console.log("[PatentBoom Search] source:", patentResults[0]?.source || "unknown");
+    const searchResult = await searchPatents(normalizedQuery, normalizedMarket);
+    console.log("[PatentBoom Search] results count:", searchResult.results.length);
+    console.log("[PatentBoom Search] provider:", searchResult.provider);
+    console.log("[PatentBoom Search] is demo data:", searchResult.isDemo);
+    if (searchResult.providerError) {
+      console.log("[PatentBoom Search] provider error:", searchResult.providerError);
+    }
 
     // Step 3: Create patent_searches record
     console.log("[PatentBoom Search] inserting into patent_searches table");
@@ -111,8 +133,8 @@ export async function POST(request: NextRequest) {
       .insert({
         query: normalizedQuery,
         market: normalizedMarket,
-        source: patentResults[0]?.source || "unknown",
-        result_count: patentResults.length,
+        source: searchResult.provider,
+        result_count: searchResult.results.length,
       })
       .select()
       .single();
@@ -132,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Step 4: Insert patent results
     console.log("[PatentBoom Search] inserting into patent_results table");
-    const resultsToInsert = patentResults.map((result) => ({
+    const resultsToInsert = searchResult.results.map((result) => ({
       search_id: searchRecord.id,
       patent_number: result.patent_number,
       title: result.title,
@@ -173,6 +195,10 @@ export async function POST(request: NextRequest) {
       searchId: searchRecord.id,
       results: insertedResults,
       resultCount: insertedResults?.length || 0,
+      provider: searchResult.provider,
+      isDemo: searchResult.isDemo,
+      providerStatus: searchResult.providerStatus,
+      providerError: searchResult.providerError,
     };
 
     const { error: cacheInsertError } = await supabaseAdmin.from("patent_api_cache").insert({
@@ -190,7 +216,7 @@ export async function POST(request: NextRequest) {
     // Step 6: Record API usage (even for demo data to track usage)
     console.log("[PatentBoom Search] recording API usage");
     const { error: usageError } = await supabaseAdmin.from("patent_api_usage").insert({
-      provider: patentResults[0]?.source || "unknown",
+      provider: searchResult.provider,
       endpoint: "search",
       request_count: 1,
     });

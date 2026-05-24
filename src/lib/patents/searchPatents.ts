@@ -38,49 +38,115 @@ export interface PatentResult {
   raw_json: unknown;
 }
 
+// Search result with debug info
+export interface SearchResult {
+  results: PatentResult[];
+  provider: string;
+  isDemo: boolean;
+  providerStatus?: number;
+  providerError?: string;
+}
+
 /**
  * Search patents using available API providers
  *
  * @param query - Search query string
  * @param market - Optional market category for filtering
- * @returns Array of patent results (max 25)
+ * @returns Search result with patents and debug info
  */
 export async function searchPatents(
   query: string,
   market?: string
-): Promise<PatentResult[]> {
+): Promise<SearchResult> {
   const patentsViewKey = process.env.PATENTSVIEW_API_KEY;
   const usptoKey = process.env.USPTO_API_KEY;
 
+  console.log("[Patent Provider] PATENTSVIEW_API_KEY exists:", !!patentsViewKey);
+  console.log("[Patent Provider] USPTO_API_KEY exists:", !!usptoKey);
+
   // Try PatentsView API first (preferred)
   if (patentsViewKey) {
+    console.log("[Patent Provider] using provider: PatentsView");
     try {
       const results = await searchPatentsView(query, market);
       if (results.length > 0) {
-        return results;
+        console.log("[Patent Provider] PatentsView success, results:", results.length);
+        return {
+          results,
+          provider: "patentsview",
+          isDemo: false,
+        };
       }
+      console.log("[Patent Provider] PatentsView returned 0 results");
     } catch (error) {
-      console.error("PatentsView API error:", error);
-      // Fall through to next provider
+      console.error("[Patent Provider] PatentsView error:", error);
+      const errorInfo = error instanceof Error ? error.message : "Unknown error";
+      console.log("[Patent Provider] falling back to next provider");
+      
+      // Try USPTO if available
+      if (usptoKey) {
+        console.log("[Patent Provider] using provider: USPTO");
+        try {
+          const results = await searchUSPTO(query, market);
+          if (results.length > 0) {
+            console.log("[Patent Provider] USPTO success, results:", results.length);
+            return {
+              results,
+              provider: "uspto",
+              isDemo: false,
+            };
+          }
+        } catch (usptoError) {
+          console.error("[Patent Provider] USPTO error:", usptoError);
+        }
+      }
+      
+      // Return demo with error info
+      console.warn("[Patent Provider] all APIs failed, returning demo data");
+      return {
+        results: getDemoPatentResults(query, market),
+        provider: "demo",
+        isDemo: true,
+        providerError: `PatentsView failed: ${errorInfo}`,
+      };
     }
   }
 
-  // Try USPTO API as fallback
+  // Try USPTO API if no PatentsView key
   if (usptoKey) {
+    console.log("[Patent Provider] using provider: USPTO");
     try {
       const results = await searchUSPTO(query, market);
       if (results.length > 0) {
-        return results;
+        console.log("[Patent Provider] USPTO success, results:", results.length);
+        return {
+          results,
+          provider: "uspto",
+          isDemo: false,
+        };
       }
     } catch (error) {
-      console.error("USPTO API error:", error);
-      // Fall through to demo data
+      console.error("[Patent Provider] USPTO error:", error);
+      const errorInfo = error instanceof Error ? error.message : "Unknown error";
+      
+      console.warn("[Patent Provider] all APIs failed, returning demo data");
+      return {
+        results: getDemoPatentResults(query, market),
+        provider: "demo",
+        isDemo: true,
+        providerError: `USPTO failed: ${errorInfo}`,
+      };
     }
   }
 
-  // Return demo data if all APIs fail
-  console.warn("All patent APIs unavailable, returning demo data");
-  return getDemoPatentResults(query, market);
+  // No API keys available - return demo
+  console.warn("[Patent Provider] no API keys configured, returning demo data");
+  return {
+    results: getDemoPatentResults(query, market),
+    provider: "demo",
+    isDemo: true,
+    providerError: "No API keys configured",
+  };
 }
 
 /**
@@ -92,6 +158,9 @@ async function searchPatentsView(
   market?: string
 ): Promise<PatentResult[]> {
   const apiKey = process.env.PATENTSVIEW_API_KEY;
+  const url = "https://api.patentsview.org/patents/query";
+
+  console.log("[Patent Provider] request url:", url);
 
   // Build search criteria
   const searchCriteria = {
@@ -120,7 +189,7 @@ async function searchPatentsView(
     s: [{ patent_date: "desc" }],
   };
 
-  const response = await fetch("https://api.patentsview.org/patents/query", {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -129,12 +198,34 @@ async function searchPatentsView(
     body: JSON.stringify(requestBody),
   });
 
+  console.log("[Patent Provider] response status:", response.status);
+  console.log("[Patent Provider] response ok:", response.ok);
+
   if (!response.ok) {
-    throw new Error(`PatentsView API error: ${response.statusText}`);
+    const bodyText = await response.text();
+    const bodyPreview = bodyText.substring(0, 500);
+    
+    console.error("[Patent Provider] live API failed:", {
+      provider: "patentsview",
+      status: response.status,
+      statusText: response.statusText,
+      bodyPreview,
+    });
+    
+    throw new Error(
+      `PatentsView API error: ${response.status} ${response.statusText}. Body: ${bodyPreview}`
+    );
   }
 
   const data = await response.json();
   const patents = data.patents || [];
+
+  console.log("[Patent Provider] parsed results count:", patents.length);
+
+  if (patents.length === 0) {
+    console.log("[Patent Provider] no patents returned from PatentsView");
+    return [];
+  }
 
   return patents.slice(0, MAX_RESULTS_PER_SEARCH).map((patent: any) => {
     const grantDate = patent.patent_date || null;

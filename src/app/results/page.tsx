@@ -27,6 +27,7 @@ interface SearchData {
   query: string;
   market: string | null;
   result_count: number;
+  source: string;
 }
 
 function ResultsContent() {
@@ -223,7 +224,7 @@ function ResultsContent() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-semibold text-orange-300">
                   Demo Data Notice
                 </p>
@@ -231,6 +232,19 @@ function ResultsContent() {
                   Patent APIs are currently unavailable. Showing demo results
                   for demonstration purposes. Configure PATENTSVIEW_API_KEY or
                   USPTO_API_KEY for live data.
+                </p>
+                <p className="mt-3 text-xs text-orange-400/80">
+                  <span className="font-mono">Live provider attempted: {searchData?.source || 'unknown'}</span>
+                  <br />
+                  To debug API issues, check{" "}
+                  <Link 
+                    href="/api/debug/patent-provider" 
+                    target="_blank"
+                    className="underline hover:text-orange-300"
+                  >
+                    /api/debug/patent-provider
+                  </Link>
+                  {" "}or view Netlify function logs.
                 </p>
               </div>
             </div>
