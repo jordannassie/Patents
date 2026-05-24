@@ -355,7 +355,7 @@ function ResultsContent() {
                           {reports[patent.id].summary}
                         </p>
                         <Link
-                          href={`/patents/${patent.patent_number}`}
+                          href={`/patents/${patent.id}`}
                           className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
                         >
                           View Full Report
@@ -415,14 +415,14 @@ function ResultsContent() {
                     </button>
                   ) : (
                     <Link
-                      href={`/patents/${patent.patent_number}`}
+                      href={`/patents/${patent.id}`}
                       className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
                     >
                       View Full Report
                     </Link>
                   )}
                   <Link
-                    href={`/patents/${patent.patent_number}`}
+                    href={`/patents/${patent.id}`}
                     className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
                   >
                     View Details
@@ -465,6 +465,13 @@ function ResultsContent() {
                       </span>
                     )}
                   </button>
+                </div>
+
+                {/* Debug ID Display */}
+                <div className="mt-3 pt-3 border-t border-zinc-800">
+                  <p className="text-xs text-zinc-600 font-mono">
+                    ID: {patent.id}
+                  </p>
                 </div>
               </div>
             ))}

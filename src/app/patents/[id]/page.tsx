@@ -15,7 +15,10 @@ interface PatentData {
   inventors: string | null;
   cpc_codes: string | null;
   status_estimate: string;
+  source_url: string | null;
+  source: string | null;
   is_demo: boolean;
+  raw_json?: any;
 }
 
 interface OpportunityReport {
@@ -43,7 +46,7 @@ interface OpportunityReport {
 
 export default function PatentDetailPage() {
   const params = useParams();
-  const patentNumber = params.id as string;
+  const patentId = params.id as string;
   
   const [patent, setPatent] = useState<PatentData | null>(null);
   const [report, setReport] = useState<OpportunityReport | null>(null);
@@ -55,14 +58,21 @@ export default function PatentDetailPage() {
   useEffect(() => {
     async function loadPatentAndReport() {
       try {
-        // Load patent from search results
-        // For now, we'll create an API route to fetch patent by number
-        const patentResponse = await fetch(
-          `/api/patents/by-number?number=${encodeURIComponent(patentNumber)}`
+        // Primary: Load patent by UUID (patent_results.id)
+        let patentResponse = await fetch(
+          `/api/patents/by-id?id=${encodeURIComponent(patentId)}`
         );
 
+        // Fallback: Try loading by patent number if UUID lookup fails
         if (!patentResponse.ok) {
-          throw new Error("Patent not found");
+          console.log('UUID lookup failed, trying patent number fallback');
+          patentResponse = await fetch(
+            `/api/patents/by-number?number=${encodeURIComponent(patentId)}`
+          );
+        }
+
+        if (!patentResponse.ok) {
+          throw new Error("Patent result not found");
         }
 
         const patentData = await patentResponse.json();
@@ -74,16 +84,16 @@ export default function PatentDetailPage() {
         }
       } catch (err) {
         console.error("Error loading patent:", err);
-        setError("Failed to load patent details");
+        setError("Patent result not found. Go back to search results.");
       } finally {
         setLoading(false);
       }
     }
 
-    if (patentNumber) {
+    if (patentId) {
       loadPatentAndReport();
     }
-  }, [patentNumber]);
+  }, [patentId]);
 
   const handleGenerateReport = async () => {
     if (!patent) return;
@@ -213,11 +223,20 @@ export default function PatentDetailPage() {
                   {patent.status_estimate}
                 </span>
                 <span className="text-sm text-zinc-400">
-                  {patent.patent_number}
+                  {patent.patent_number === "Unknown" && patent.raw_json?.applicationMetaData?.applicationNumberText
+                    ? `Application: ${patent.raw_json.applicationMetaData.applicationNumberText}`
+                    : patent.patent_number !== "Unknown" 
+                    ? `Patent: ${patent.patent_number}`
+                    : "Patent Number: Unknown"}
                 </span>
                 {patent.is_demo && (
                   <span className="rounded-full bg-orange-500/10 px-3 py-1 text-xs font-medium text-orange-400">
                     Demo Data
+                  </span>
+                )}
+                {patent.source && (
+                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                    Source: {patent.source}
                   </span>
                 )}
               </div>
@@ -259,6 +278,14 @@ export default function PatentDetailPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
+            {patent.filing_date && (
+              <div>
+                <div className="text-sm text-zinc-400">Filing Date</div>
+                <div className="mt-1 font-medium text-white">
+                  {patent.filing_date}
+                </div>
+              </div>
+            )}
             <div>
               <div className="text-sm text-zinc-400">Grant Date</div>
               <div className="mt-1 font-medium text-white">
@@ -271,12 +298,35 @@ export default function PatentDetailPage() {
                 {patent.assignee || "N/A"}
               </div>
             </div>
+            {patent.inventors && (
+              <div>
+                <div className="text-sm text-zinc-400">Inventors</div>
+                <div className="mt-1 font-medium text-white">
+                  {patent.inventors}
+                </div>
+              </div>
+            )}
             <div>
               <div className="text-sm text-zinc-400">CPC Codes</div>
               <div className="mt-1 font-medium text-white">
                 {patent.cpc_codes || "N/A"}
               </div>
             </div>
+            {patent.source_url && (
+              <div>
+                <div className="text-sm text-zinc-400">Source</div>
+                <div className="mt-1">
+                  <a 
+                    href={patent.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-400 hover:text-blue-300 underline"
+                  >
+                    View on USPTO
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-6">
