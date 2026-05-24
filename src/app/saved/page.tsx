@@ -159,14 +159,17 @@ export default function SavedPage() {
                 No Hunter opportunities yet
               </h3>
               <p className="mt-2 text-sm text-zinc-400">
-                Start a Hunter run to automatically discover and analyze patent opportunities.
+                The Hunter Engine has not saved any high-scoring AI-ready opportunities yet.
+              </p>
+              <p className="mt-1 text-sm text-zinc-500">
+                Start or continue a Hunter run to discover patent-backed venture ideas.
               </p>
               <div className="mt-6 flex justify-center gap-4">
                 <Link
                   href="/hunter"
                   className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  Launch Hunter
+                  Open Hunter Engine
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>

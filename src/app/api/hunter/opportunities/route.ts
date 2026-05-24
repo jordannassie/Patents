@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ opportunities: opportunities || [] });
+    return NextResponse.json({ items: opportunities || [] });
   } catch (error) {
     console.error('[Hunter Opportunities] Error:', error);
     return NextResponse.json(

@@ -51,6 +51,7 @@ interface Opportunity {
   recommendation: string | null;
   bottleneck_reason: string;
   patent_result_id: string;
+  report_id: string | null;
 }
 
 interface RunningRun {
@@ -1033,7 +1034,7 @@ export default function HunterPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-white font-medium group-hover:text-indigo-300 transition-colors">{opp.title}</h3>
-                        {opp.opportunity_score ? (
+                        {opp.report_id ? (
                           <span className="px-2 py-0.5 text-xs font-medium bg-green-900/50 text-green-400 rounded">
                             AI Report Ready
                           </span>
