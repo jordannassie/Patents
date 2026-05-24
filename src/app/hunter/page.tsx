@@ -2,42 +2,20 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const BOTTLENECK_CATEGORIES = [
-  'Compute Bottleneck',
-  'Energy / Grid Bottleneck',
-  'AI-Agent Control Bottleneck',
-  'Cybersecurity / Data Exfiltration Bottleneck',
-  'Digital Identity / Deepfake Trust Bottleneck',
-  'Crypto Irreversible Transaction Bottleneck',
-  'Healthcare Automation / Liability Bottleneck',
-  'Autonomous Vehicle / Logistics Bottleneck',
-  'Payment / Fintech Authorization Bottleneck',
-  'Regulatory / Compliance Policy Bottleneck',
-  'Space / Satellite Communication Bottleneck',
-  'Robotics Safety / Verification Bottleneck',
-  'DARPA / Defense Autonomy Bottleneck',
-  'Command & Control Authorization Bottleneck',
-  'Cybersecurity / SOCOM / Cyber Command Bottleneck',
-  'Battlefield Medicine / Triage Bottleneck',
-  'Drone Swarm / Coordination Bottleneck',
-  'Satellite / Space Comms / GPS Bottleneck',
-  'Defense Supply Chain / Logistics Bottleneck',
-  'Counter-UAS / Electronic Warfare Bottleneck',
-  'Nuclear Command / Authorization Bottleneck',
-  'Special Operations / Intelligence Bottleneck',
-];
+import { BOTTLENECK_CATEGORIES } from '@/lib/hunter/categories';
 
 export default function HunterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [runType, setRunType] = useState<'manual' | 'daily_scout' | 'weekly_deep'>('manual');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([
     'AI-Agent Control Bottleneck',
     'Cybersecurity / Data Exfiltration Bottleneck',
   ]);
   const [minScore, setMinScore] = useState(75);
-  const [maxAiAnalyses, setMaxAiAnalyses] = useState(10);
+  const [maxAiAnalyses, setMaxAiAnalyses] = useState(20);
+  const [maxQueriesPerCategory, setMaxQueriesPerCategory] = useState(2);
 
   const handleToggleCategory = (category: string) => {
     if (selectedCategories.includes(category)) {
@@ -47,7 +25,7 @@ export default function HunterPage() {
     }
   };
 
-  const handleRunHunter = async () => {
+  const handleStartHunter = async () => {
     if (selectedCategories.length === 0) {
       alert('Please select at least one category');
       return;
@@ -56,15 +34,14 @@ export default function HunterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/hunter/run', {
+      const response = await fetch('/api/hunter/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           runType,
           categories: selectedCategories,
           minScore,
-          maxCategories: runType === 'weekly_deep' ? 12 : runType === 'daily_scout' ? 3 : 5,
-          maxQueriesPerCategory: runType === 'weekly_deep' ? 3 : 2,
+          maxQueriesPerCategory,
           maxResultsPerQuery: 25,
           maxAiAnalyses,
         }),
@@ -73,14 +50,42 @@ export default function HunterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to run hunter');
+        throw new Error(data.message || 'Failed to start hunter');
       }
 
       router.push(`/hunter/runs/${data.runId}`);
     } catch (error) {
-      console.error('Hunter run error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to run hunter');
+      console.error('Hunter start error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to start hunter');
       setLoading(false);
+    }
+  };
+
+  const handleProcessNext = async () => {
+    setProcessing(true);
+
+    try {
+      const response = await fetch('/api/hunter/process-next', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          maxTasks: 2,
+          maxAiAnalyses: 4,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to process tasks');
+      }
+
+      alert(data.message || 'Tasks processed successfully');
+    } catch (error) {
+      console.error('Process error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to process tasks');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -89,22 +94,23 @@ export default function HunterPage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">Opportunity Hunter</h1>
         <p className="text-gray-400 text-lg mb-8">
-          Automatically search billion-dollar bottlenecks, pre-score candidates, and analyze top opportunities with AI.
+          Queue-based patent opportunity discovery. Searches are processed in small batches every 10 minutes.
         </p>
 
-        {/* Automation Explanation */}
+        {/* Queue Explanation */}
         <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-            <span className="text-blue-400">⚡</span> Automated Hunter Runs
+            <span className="text-blue-400">⚙️</span> Queue-Based Processing
           </h2>
           <p className="text-gray-300 mb-3">
-            <strong>Daily Scout:</strong> Small, low-cost searches. 3 categories, 2 queries each, max 10 AI analyses.
-          </p>
-          <p className="text-gray-300 mb-3">
-            <strong>Weekly Deep Run:</strong> Scans all bottlenecks. 12 categories, 3 queries each, max 50 AI analyses.
+            Hunter runs are processed in small batches every 10 minutes to avoid Netlify timeouts.
+            When you start a run, tasks are queued and processed incrementally by the cron worker.
           </p>
           <p className="text-gray-300 text-sm">
-            PatentBoom uses metadata-only searches, caching, and pre-AI filtering. It does not bulk-pull USPTO through the live API.
+            <strong>Daily Scout:</strong> 5 categories, 2 queries each, max 20 AI analyses.
+          </p>
+          <p className="text-gray-300 text-sm">
+            <strong>Weekly Deep:</strong> All categories, 3 queries each, max 75 AI analyses.
           </p>
         </div>
 
@@ -130,7 +136,7 @@ export default function HunterPage() {
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
               }`}
             >
-              Daily Scout Preview
+              Daily Scout
             </button>
             <button
               onClick={() => setRunType('weekly_deep')}
@@ -140,7 +146,7 @@ export default function HunterPage() {
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
               }`}
             >
-              Weekly Deep Preview
+              Weekly Deep
             </button>
           </div>
         </div>
@@ -167,7 +173,7 @@ export default function HunterPage() {
 
         {/* Settings */}
         <div className="bg-gray-900 rounded-lg p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Min Score (Pre-AI)</label>
               <input
@@ -190,17 +196,38 @@ export default function HunterPage() {
                 className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Queries per Category</label>
+              <input
+                type="number"
+                value={maxQueriesPerCategory}
+                onChange={(e) => setMaxQueriesPerCategory(parseInt(e.target.value))}
+                min="1"
+                max="5"
+                className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Run Button */}
-        <button
-          onClick={handleRunHunter}
-          disabled={loading || selectedCategories.length === 0}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Running Hunter...' : 'Run Hunter Now'}
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={handleStartHunter}
+            disabled={loading || selectedCategories.length === 0}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Starting Hunter...' : 'Start Hunter Run'}
+          </button>
+
+          <button
+            onClick={handleProcessNext}
+            disabled={processing}
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {processing ? 'Processing...' : 'Process Next Batch (Testing)'}
+          </button>
+        </div>
 
         {/* View Past Runs */}
         <div className="mt-6 text-center">
@@ -212,8 +239,8 @@ export default function HunterPage() {
         {/* Rate Limit Note */}
         <div className="mt-8 p-4 bg-gray-900 border border-gray-800 rounded-lg text-sm text-gray-400">
           <strong>Rate-Limit Safe:</strong> PatentBoom uses metadata-only searches, caching, pre-AI filtering, 
-          and sequential processing. It does not bulk-pull USPTO through the live API. Max 25 results per query, 
-          no auto-pagination, reuses existing reports.
+          and sequential processing. Max 25 results per query, no auto-pagination, reuses existing reports.
+          Tasks are processed in 10-minute intervals to avoid serverless timeouts.
         </div>
       </div>
     </div>

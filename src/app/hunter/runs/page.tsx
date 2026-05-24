@@ -9,6 +9,10 @@ interface HunterRun {
   name: string;
   status: string;
   categories: string[];
+  total_tasks: number;
+  completed_tasks: number;
+  failed_tasks: number;
+  pending_tasks: number;
   total_queries: number;
   total_records_pulled: number;
   total_candidates_prescored: number;
@@ -144,15 +148,17 @@ export default function HunterRunsPage() {
                     <p className="text-white font-semibold">{Array.isArray(run.categories) ? run.categories.length : 0}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs mb-1">Records Pulled</p>
+                    <p className="text-gray-500 text-xs mb-1">Progress</p>
+                    <p className="text-white font-semibold">
+                      {run.completed_tasks || 0}/{run.total_tasks || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Records</p>
                     <p className="text-white font-semibold">{run.total_records_pulled}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs mb-1">Pre-scored</p>
-                    <p className="text-white font-semibold">{run.total_candidates_prescored}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs mb-1">AI Analyzed</p>
+                    <p className="text-gray-500 text-xs mb-1">Analyzed</p>
                     <p className="text-white font-semibold">{run.total_analyzed}</p>
                   </div>
                   <div>

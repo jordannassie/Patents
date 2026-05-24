@@ -10,6 +10,10 @@ interface HunterRun {
   name: string;
   status: string;
   categories: string[];
+  total_tasks: number;
+  completed_tasks: number;
+  failed_tasks: number;
+  pending_tasks: number;
   total_queries: number;
   total_records_pulled: number;
   total_candidates_prescored: number;
@@ -125,22 +129,25 @@ export default function HunterRunDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
             <div>
               <p className="text-gray-500 text-xs mb-1">Status</p>
-              <p className="text-white font-semibold">{run.status}</p>
+              <p className="text-white font-semibold capitalize">{run.status}</p>
             </div>
             <div>
               <p className="text-gray-500 text-xs mb-1">Type</p>
               <p className="text-white font-semibold">{run.run_type}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs mb-1">Records Pulled</p>
+              <p className="text-gray-500 text-xs mb-1">Progress</p>
+              <p className="text-white font-semibold">
+                {run.completed_tasks}/{run.total_tasks}
+                {run.failed_tasks > 0 && <span className="text-red-400"> ({run.failed_tasks} failed)</span>}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-xs mb-1">Records</p>
               <p className="text-white font-semibold">{run.total_records_pulled}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs mb-1">Pre-scored</p>
-              <p className="text-white font-semibold">{run.total_candidates_prescored}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs mb-1">AI Analyzed</p>
+              <p className="text-gray-500 text-xs mb-1">Analyzed</p>
               <p className="text-white font-semibold">{run.total_analyzed}</p>
             </div>
             <div>

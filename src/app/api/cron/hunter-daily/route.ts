@@ -2,14 +2,11 @@
  * GET /api/cron/hunter-daily
  * Daily Scout Run - Protected by CRON_SECRET
  * 
- * Daily scout settings:
- * - Small, low-cost searches
- * - 3 categories, 2 queries each
- * - Max 10 AI analyses
+ * Creates a daily scout run if one doesn't exist today
  */
 
 import { NextResponse } from 'next/server';
-import { runOpportunityHunter } from '@/lib/hunter/runHunter';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 const DAILY_CATEGORIES = [
   'AI-Agent Control Bottleneck',
@@ -26,7 +23,7 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      console.error('[Cron] CRON_SECRET not configured');
+      console.error('[Cron Daily] CRON_SECRET not configured');
       return NextResponse.json(
         { error: 'Cron not configured' },
         { status: 500 }
@@ -35,38 +32,72 @@ export async function GET(request: Request) {
 
     const expectedAuth = `Bearer ${cronSecret}`;
     if (authHeader !== expectedAuth) {
-      console.error('[Cron] Unauthorized cron request');
+      console.error('[Cron Daily] Unauthorized cron request');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    console.log('[Cron] Starting daily scout run');
+    const supabase = getSupabaseAdmin();
 
-    const result = await runOpportunityHunter({
-      runType: 'daily_scout',
-      name: `Daily Scout - ${new Date().toISOString().split('T')[0]}`,
-      categories: DAILY_CATEGORIES,
-      minScore: 75,
-      maxCategories: 3,
-      maxQueriesPerCategory: 2,
-      maxResultsPerQuery: 25,
-      maxAiAnalyses: 10,
-    });
+    // Check if a daily_scout run already exists today or is currently running
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existingRuns } = await supabase
+      .from('opportunity_hunter_runs')
+      .select('*')
+      .eq('run_type', 'daily_scout')
+      .gte('created_at', `${today}T00:00:00Z`)
+      .or('status.eq.running,status.eq.pending');
 
-    console.log('[Cron] Daily scout completed:', result.summary);
+    if (existingRuns && existingRuns.length > 0) {
+      console.log('[Cron Daily] Daily scout already exists or is running');
+      return NextResponse.json({
+        status: 'skipped',
+        message: 'Daily scout already exists or is running today',
+        existingRunId: existingRuns[0].id,
+      });
+    }
+
+    console.log('[Cron Daily] Creating daily scout run');
+
+    // Call /api/hunter/start to create the run
+    const startResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/hunter/start`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runType: 'daily_scout',
+          name: `Daily Scout - ${today}`,
+          categories: DAILY_CATEGORIES,
+          minScore: 75,
+          maxQueriesPerCategory: 2,
+          maxResultsPerQuery: 25,
+          maxAiAnalyses: 20,
+        }),
+      }
+    );
+
+    const startData = await startResponse.json();
+
+    if (!startResponse.ok) {
+      throw new Error(startData.message || 'Failed to start daily scout');
+    }
+
+    console.log('[Cron Daily] Daily scout run created:', startData.runId);
 
     return NextResponse.json({
       success: true,
-      runId: result.runId,
-      summary: result.summary,
+      runId: startData.runId,
+      taskCount: startData.taskCount,
+      message: 'Daily scout run created. Will be processed by cron worker.',
     });
   } catch (error) {
-    console.error('[Cron] Daily scout error:', error);
+    console.error('[Cron Daily] Error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to run daily scout',
+        error: 'Failed to create daily scout',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

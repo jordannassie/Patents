@@ -2,39 +2,12 @@
  * GET /api/cron/hunter-weekly
  * Weekly Deep Run - Protected by CRON_SECRET
  * 
- * Weekly deep settings:
- * - All bottleneck categories
- * - 12 categories, 3 queries each
- * - Max 50 AI analyses
+ * Creates a weekly deep run if one doesn't exist this week
  */
 
 import { NextResponse } from 'next/server';
-import { runOpportunityHunter } from '@/lib/hunter/runHunter';
-
-const ALL_BOTTLENECK_CATEGORIES = [
-  'Compute Bottleneck',
-  'Energy / Grid Bottleneck',
-  'AI-Agent Control Bottleneck',
-  'Cybersecurity / Data Exfiltration Bottleneck',
-  'Digital Identity / Deepfake Trust Bottleneck',
-  'Crypto Irreversible Transaction Bottleneck',
-  'Healthcare Automation / Liability Bottleneck',
-  'Autonomous Vehicle / Logistics Bottleneck',
-  'Payment / Fintech Authorization Bottleneck',
-  'Regulatory / Compliance Policy Bottleneck',
-  'Space / Satellite Communication Bottleneck',
-  'Robotics Safety / Verification Bottleneck',
-  'DARPA / Defense Autonomy Bottleneck',
-  'Command & Control Authorization Bottleneck',
-  'Cybersecurity / SOCOM / Cyber Command Bottleneck',
-  'Battlefield Medicine / Triage Bottleneck',
-  'Drone Swarm / Coordination Bottleneck',
-  'Satellite / Space Comms / GPS Bottleneck',
-  'Defense Supply Chain / Logistics Bottleneck',
-  'Counter-UAS / Electronic Warfare Bottleneck',
-  'Nuclear Command / Authorization Bottleneck',
-  'Special Operations / Intelligence Bottleneck',
-];
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { BOTTLENECK_CATEGORIES } from '@/lib/hunter/categories';
 
 export async function GET(request: Request) {
   try {
@@ -43,7 +16,7 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      console.error('[Cron] CRON_SECRET not configured');
+      console.error('[Cron Weekly] CRON_SECRET not configured');
       return NextResponse.json(
         { error: 'Cron not configured' },
         { status: 500 }
@@ -52,38 +25,76 @@ export async function GET(request: Request) {
 
     const expectedAuth = `Bearer ${cronSecret}`;
     if (authHeader !== expectedAuth) {
-      console.error('[Cron] Unauthorized cron request');
+      console.error('[Cron Weekly] Unauthorized cron request');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    console.log('[Cron] Starting weekly deep run');
+    const supabase = getSupabaseAdmin();
 
-    const result = await runOpportunityHunter({
-      runType: 'weekly_deep',
-      name: `Weekly Deep - ${new Date().toISOString().split('T')[0]}`,
-      categories: ALL_BOTTLENECK_CATEGORIES,
-      minScore: 75,
-      maxCategories: 12,
-      maxQueriesPerCategory: 3,
-      maxResultsPerQuery: 25,
-      maxAiAnalyses: 50,
-    });
+    // Check if a weekly_deep run already exists this week or is currently running
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    console.log('[Cron] Weekly deep completed:', result.summary);
+    const { data: existingRuns } = await supabase
+      .from('opportunity_hunter_runs')
+      .select('*')
+      .eq('run_type', 'weekly_deep')
+      .gte('created_at', startOfWeek.toISOString())
+      .or('status.eq.running,status.eq.pending');
+
+    if (existingRuns && existingRuns.length > 0) {
+      console.log('[Cron Weekly] Weekly deep already exists or is running');
+      return NextResponse.json({
+        status: 'skipped',
+        message: 'Weekly deep already exists or is running this week',
+        existingRunId: existingRuns[0].id,
+      });
+    }
+
+    console.log('[Cron Weekly] Creating weekly deep run');
+
+    // Call /api/hunter/start to create the run
+    const startResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/hunter/start`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runType: 'weekly_deep',
+          name: `Weekly Deep - ${now.toISOString().split('T')[0]}`,
+          categories: BOTTLENECK_CATEGORIES,
+          minScore: 75,
+          maxQueriesPerCategory: 3,
+          maxResultsPerQuery: 25,
+          maxAiAnalyses: 75,
+        }),
+      }
+    );
+
+    const startData = await startResponse.json();
+
+    if (!startResponse.ok) {
+      throw new Error(startData.message || 'Failed to start weekly deep');
+    }
+
+    console.log('[Cron Weekly] Weekly deep run created:', startData.runId);
 
     return NextResponse.json({
       success: true,
-      runId: result.runId,
-      summary: result.summary,
+      runId: startData.runId,
+      taskCount: startData.taskCount,
+      message: 'Weekly deep run created. Will be processed by cron worker.',
     });
   } catch (error) {
-    console.error('[Cron] Weekly deep error:', error);
+    console.error('[Cron Weekly] Error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to run weekly deep',
+        error: 'Failed to create weekly deep',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
