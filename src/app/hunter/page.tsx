@@ -223,13 +223,10 @@ export default function HunterPage() {
     setProcessing(true);
 
     try {
-      const response = await fetch('/api/hunter/process-next', {
+      // Use safe manual-process route instead of calling process-next directly
+      const response = await fetch('/api/hunter/manual-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          maxTasks: 2,
-          maxAiAnalyses: 4,
-        }),
       });
 
       const data = await response.json();
@@ -245,6 +242,47 @@ export default function HunterPage() {
       alert(error instanceof Error ? error.message : 'Failed to process tasks');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleQuickScout = async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/hunter/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runType: 'manual',
+          categories: [
+            'AI-Agent Control Bottleneck',
+            'Cybersecurity / Data Exfiltration Bottleneck',
+            'Crypto Irreversible Transaction Bottleneck',
+            'Defense Autonomy / Command Bottleneck',
+          ],
+          minScore: 75,
+          maxQueriesPerCategory: 1,
+          maxResultsPerQuery: 25,
+          maxAiAnalyses: 8,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to start hunter');
+      }
+
+      setShowControls(false);
+      await fetchAllData();
+      
+      // Show success message
+      alert(`Quick Scout Run started! ${data.totalTasks || 0} tasks queued. Click "Process First Batch Now" to begin.`);
+    } catch (error) {
+      console.error('Quick Scout error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to start Quick Scout');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -299,6 +337,138 @@ export default function HunterPage() {
           </div>
         </div>
 
+        {/* Empty State Onboarding - Show when no runs and no worker logs */}
+        {hunterStatus && 
+         hunterStatus.pendingTasks === 0 && 
+         hunterStatus.runningTasks === 0 && 
+         activityLogs.length === 0 && 
+         !hunterStatus.lastRunCreatedAt && (
+          <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-500/50 rounded-xl p-8 mb-6">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="mb-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-500/20 mb-4">
+                  <svg className="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-3">
+                  Start the Hunter Engine
+                </h2>
+                <p className="text-lg text-gray-300 mb-6">
+                  Create your first bottleneck scan. PatentBoom will create queued tasks, 
+                  then the worker will process them in small batches.
+                </p>
+              </div>
+
+              {/* 3 Steps */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-indigo-400 mb-2">1</div>
+                  <div className="text-sm font-semibold text-white mb-1">Start a Hunter Run</div>
+                  <div className="text-xs text-gray-400">Choose categories and create queued tasks</div>
+                </div>
+                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-indigo-400 mb-2">2</div>
+                  <div className="text-sm font-semibold text-white mb-1">Process the First Batch</div>
+                  <div className="text-xs text-gray-400">Manually trigger the worker to start processing</div>
+                </div>
+                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-indigo-400 mb-2">3</div>
+                  <div className="text-sm font-semibold text-white mb-1">Connect Cron for Automation</div>
+                  <div className="text-xs text-gray-400">Set up 10-minute scheduled processing</div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <button
+                  onClick={handleQuickScout}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Start Quick Scout Run
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowControls(true)}
+                  className="bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors border border-gray-700"
+                >
+                  Custom Run Settings
+                </button>
+                <Link
+                  href="/search"
+                  className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Manual Search →
+                </Link>
+              </div>
+
+              {/* Quick Scout Info */}
+              <div className="mt-6 text-sm text-gray-500">
+                <p>Quick Scout: 4 high-value categories • 1 query each • Up to 8 AI analyses</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Process First Batch CTA - Show when tasks exist but no worker logs yet */}
+        {hunterStatus && 
+         (hunterStatus.pendingTasks > 0 || hunterStatus.runningTasks > 0) && 
+         activityLogs.length === 0 && (
+          <div className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-2 border-blue-500/50 rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Ready to Process Tasks
+                </h3>
+                <p className="text-gray-300 mb-1">
+                  Hunter run created! {hunterStatus.pendingTasks} tasks are queued.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Click below to manually process the first batch, or wait for the cron worker.
+                </p>
+              </div>
+              <button
+                onClick={handleProcessNext}
+                disabled={processing}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-4"
+              >
+                {processing ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Process First Batch Now
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Engine Status Hero */}
         {hunterStatus ? (
           <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-8 mb-6 relative overflow-hidden">
@@ -336,11 +506,15 @@ export default function HunterPage() {
                         <span className="text-xl text-yellow-400">Waiting for cron...</span>
                       )
                     ) : (
-                      <span className="text-xl text-gray-500">Not scheduled</span>
+                      <span className="text-xl text-gray-500">Waiting for first worker check</span>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Cron checks the queue every 10 minutes and processes the next batch.
+                    {hunterStatus.nextExpectedWorkerRunAt ? (
+                      'Cron checks the queue every 10 minutes and processes the next batch.'
+                    ) : (
+                      'Start a Hunter run, then process the first batch. After cron is connected, this timer will track the next expected 10-minute worker check.'
+                    )}
                   </div>
                 </div>
               </div>
@@ -383,6 +557,92 @@ export default function HunterPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
               <div className="text-xs text-gray-500 mb-1">Saved</div>
               <div className="text-2xl font-bold text-emerald-400">{hunterStatus.lastWorkerItemsSaved}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Automation Setup Checklist */}
+        {hunterStatus && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 text-white">Automation Setup</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                  hunterStatus.lastRunCreatedAt ? 'bg-green-500' : 'bg-gray-600'
+                }`}>
+                  {hunterStatus.lastRunCreatedAt && (
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Hunter run created</div>
+                  <div className="text-xs text-gray-500">
+                    {hunterStatus.lastRunCreatedAt ? 'Yes' : 'Not yet'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                  hunterStatus.pendingTasks > 0 || hunterStatus.runningTasks > 0 ? 'bg-green-500' : 'bg-gray-600'
+                }`}>
+                  {(hunterStatus.pendingTasks > 0 || hunterStatus.runningTasks > 0) && (
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Tasks queued</div>
+                  <div className="text-xs text-gray-500">
+                    {hunterStatus.pendingTasks > 0 || hunterStatus.runningTasks > 0 
+                      ? `${hunterStatus.pendingTasks + hunterStatus.runningTasks} tasks` 
+                      : 'No tasks'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                  activityLogs.length > 0 ? 'bg-green-500' : 'bg-gray-600'
+                }`}>
+                  {activityLogs.length > 0 && (
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">First batch processed</div>
+                  <div className="text-xs text-gray-500">
+                    {activityLogs.length > 0 ? 'Yes' : 'Not yet'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                  activityLogs.some(log => log.source === 'cron') ? 'bg-green-500' : 'bg-yellow-600'
+                }`}>
+                  {activityLogs.some(log => log.source === 'cron') ? (
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <span className="text-xs text-white font-bold">?</span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">Cron connected</div>
+                  <div className="text-xs text-gray-500">
+                    {activityLogs.some(log => log.source === 'cron') 
+                      ? 'Active' 
+                      : 'Manual only'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -643,6 +903,32 @@ export default function HunterPage() {
                     max="5"
                     className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 text-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
                   />
+                </div>
+              </div>
+
+              {/* Quick Scout Preset */}
+              <div className="bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-indigo-300 mb-1">Quick Scout Run</h3>
+                    <p className="text-xs text-gray-400 mb-2">
+                      4 high-value bottleneck categories • 1 query each • Up to 8 AI analyses
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {['AI-Agent Control', 'Cybersecurity', 'Crypto Transaction', 'Defense Autonomy'].map(cat => (
+                        <span key={cat} className="text-xs px-2 py-0.5 bg-indigo-900/50 text-indigo-300 rounded">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleQuickScout}
+                    disabled={loading}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
+                  >
+                    {loading ? 'Starting...' : 'Start Quick Scout'}
+                  </button>
                 </div>
               </div>
 
