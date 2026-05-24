@@ -14,6 +14,7 @@ interface PatentResult {
   assignee: string | null;
   status_estimate: string;
   is_demo: boolean;
+  raw_json?: any;
 }
 
 interface OpportunityReport {
@@ -297,7 +298,11 @@ function ResultsContent() {
 
                     {/* Patent Info */}
                     <div className="mb-3 flex flex-wrap gap-4 text-sm text-zinc-400">
-                      <span>Patent: {patent.patent_number}</span>
+                      <span>
+                        {patent.patent_number === "Unknown" && patent.raw_json?.applicationMetaData?.applicationNumberText
+                          ? `Application: ${patent.raw_json.applicationMetaData.applicationNumberText}`
+                          : `Patent: ${patent.patent_number}`}
+                      </span>
                       {patent.grant_date && (
                         <>
                           <span>•</span>

@@ -134,6 +134,9 @@ export async function searchPatents(
 /**
  * Search using USPTO Open Data Portal API
  * https://developer.uspto.gov/api-catalog
+ * 
+ * Working endpoint: /api/v1/patent/applications/search/download
+ * Response structure: { patentdata: [{ applicationMetaData: {...} }] }
  */
 async function searchUsptoOdpPatents(
   query: string,
@@ -141,27 +144,18 @@ async function searchUsptoOdpPatents(
 ): Promise<PatentResult[]> {
   const apiKey = process.env.USPTO_API_KEY;
   
-  // USPTO ODP Search API endpoint
-  const url = "https://api.uspto.gov/search/v1/patent";
+  // Working USPTO ODP Search API endpoint (confirmed via endpoint discovery)
+  const url = "https://api.uspto.gov/api/v1/patent/applications/search/download";
   
-  console.log("[Patent Provider] request url: https://api.uspto.gov/search/v1/patent");
+  console.log("[Patent Provider] request url: https://api.uspto.gov/api/v1/patent/applications/search/download");
 
-  // Build search request
+  // Build search request with working body format
   const requestBody = {
     q: query,
-    rows: MAX_RESULTS_PER_SEARCH,
-    start: 0,
-    sort: "date desc",
-    fl: [
-      "patentNumber",
-      "inventionTitle",
-      "abstractText",
-      "filingDate",
-      "grantDate",
-      "applicantName",
-      "inventorName",
-      "cpcClassificationText"
-    ].join(",")
+    pagination: {
+      offset: 0,
+      limit: MAX_RESULTS_PER_SEARCH,
+    },
   };
 
   const response = await fetch(url, {
@@ -169,7 +163,7 @@ async function searchUsptoOdpPatents(
     headers: {
       "Content-Type": "application/json",
       "X-API-KEY": apiKey || "",
-      "api-key": apiKey || "",
+      "Accept": "application/json",
     },
     body: JSON.stringify(requestBody),
   });
@@ -183,7 +177,7 @@ async function searchUsptoOdpPatents(
     
     console.error("[Patent Provider] live API failed:", {
       provider: "uspto_odp",
-      url: "https://api.uspto.gov/search/v1/patent",
+      url: "https://api.uspto.gov/api/v1/patent/applications/search/download",
       status: response.status,
       statusText: response.statusText,
       bodyPreview,
@@ -196,78 +190,87 @@ async function searchUsptoOdpPatents(
 
   const data = await response.json();
   
-  // USPTO ODP response structure may vary - handle multiple formats
-  const patents = data.response?.docs || data.docs || data.results || data.patents || [];
+  // USPTO ODP response structure: { patentdata: [...] }
+  const patentRecords = data.patentdata || data.patentFileWrapperDataBag || [];
 
-  console.log("[Patent Provider] parsed results count:", patents.length);
+  console.log("[Patent Provider] parsed results count:", patentRecords.length);
 
-  if (patents.length === 0) {
+  if (patentRecords.length === 0) {
     console.log("[Patent Provider] no patents returned from USPTO ODP");
     return [];
   }
 
-  // Defensively map USPTO fields to our format
-  return patents.slice(0, MAX_RESULTS_PER_SEARCH).map((patent: any) => {
-    // Try multiple possible field names
+  // Map USPTO patent application records to our format
+  return patentRecords.slice(0, MAX_RESULTS_PER_SEARCH).map((item: any) => {
+    // USPTO returns applicationMetaData object
+    const meta = item.applicationMetaData || {};
+    
+    // Patent/application number - applications may not have patent numbers yet
     const patentNumber = 
-      patent.patentNumber || 
-      patent.patent_number || 
-      patent.applicationNumberText || 
-      patent.application_number || 
+      meta.patentNumber || 
+      meta.patentNumberText || 
+      meta.publicationNumber || 
+      meta.publicationNumberText || 
+      meta.applicationNumberText || 
+      meta.applicationNumber || 
       "Unknown";
     
     const title = 
-      patent.inventionTitle || 
-      patent.title || 
-      patent.patent_title || 
-      "No title available";
+      meta.inventionTitle || 
+      meta.title || 
+      "Untitled Patent Application";
     
     const abstract = 
-      patent.abstractText || 
-      patent.abstract || 
-      patent.patent_abstract || 
-      "No abstract available";
+      meta.abstractText || 
+      meta.abstract || 
+      meta.inventionTitle || 
+      "No abstract available from USPTO metadata.";
     
     const filingDate = 
-      patent.filingDate || 
-      patent.filing_date || 
-      patent.app_date || 
+      meta.filingDate || 
+      meta.filingDateText || 
       null;
     
     const grantDate = 
-      patent.grantDate || 
-      patent.grant_date || 
-      patent.patent_date || 
+      meta.grantDate || 
+      meta.grantDateText || 
+      meta.patentGrantDate || 
       null;
     
     const assignee = 
-      patent.applicantName || 
-      patent.assignee || 
-      patent.assignee_organization || 
-      null;
+      meta.applicantName || 
+      meta.assigneeName || 
+      meta.organizationName || 
+      meta.firstApplicantName || 
+      "Unknown";
     
-    // Handle inventors - could be string or array
-    let inventors = null;
-    if (patent.inventorName) {
-      inventors = Array.isArray(patent.inventorName) 
-        ? patent.inventorName.join(", ") 
-        : patent.inventorName;
-    } else if (patent.inventors) {
-      inventors = Array.isArray(patent.inventors)
-        ? patent.inventors.map((inv: any) => inv.inventor_last_name || inv.name || inv).join(", ")
-        : patent.inventors;
-    }
+    const inventors = 
+      meta.firstInventorName || 
+      meta.inventorName || 
+      "Unknown";
     
     // Handle CPC codes
-    let cpcCodes = null;
-    if (patent.cpcClassificationText) {
-      cpcCodes = Array.isArray(patent.cpcClassificationText)
-        ? patent.cpcClassificationText.join(", ")
-        : patent.cpcClassificationText;
-    } else if (patent.cpc_codes) {
-      cpcCodes = Array.isArray(patent.cpc_codes)
-        ? patent.cpc_codes.join(", ")
-        : patent.cpc_codes;
+    let cpcCodes = "";
+    if (meta.cpcClassificationText) {
+      cpcCodes = Array.isArray(meta.cpcClassificationText)
+        ? meta.cpcClassificationText.join(", ")
+        : meta.cpcClassificationText;
+    } else if (meta.cpcCodes) {
+      cpcCodes = Array.isArray(meta.cpcCodes)
+        ? meta.cpcCodes.join(", ")
+        : meta.cpcCodes;
+    } else if (meta.classificationCodeBag) {
+      cpcCodes = Array.isArray(meta.classificationCodeBag)
+        ? meta.classificationCodeBag.join(", ")
+        : meta.classificationCodeBag;
+    }
+
+    // Source URL - prefer Patent Center for applications
+    let sourceUrl = null;
+    if (meta.applicationNumberText) {
+      sourceUrl = `https://patentcenter.uspto.gov/applications/${meta.applicationNumberText}`;
+    } else if (patentNumber !== "Unknown") {
+      sourceUrl = `https://patents.google.com/patent/US${patentNumber}`;
     }
 
     return {
@@ -280,10 +283,10 @@ async function searchUsptoOdpPatents(
       inventors,
       cpc_codes: cpcCodes,
       status_estimate: estimatePatentStatus(grantDate, filingDate),
-      source_url: `https://patents.google.com/patent/US${patentNumber}`,
+      source_url: sourceUrl,
       source: "uspto_odp",
       is_demo: false,
-      raw_json: patent,
+      raw_json: item,
     };
   });
 }

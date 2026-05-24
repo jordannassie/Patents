@@ -117,7 +117,10 @@ export async function GET() {
           parsedData = JSON.parse(bodyText);
           
           // Try to find results in various possible response structures
+          // USPTO ODP uses patentdata or patentFileWrapperDataBag
           const results = 
+            parsedData.patentdata ||
+            parsedData.patentFileWrapperDataBag ||
             parsedData.response?.docs || 
             parsedData.docs || 
             parsedData.results || 
@@ -197,6 +200,8 @@ export async function GET() {
       try {
         parsedData = JSON.parse(bodyText);
         const results = 
+          parsedData.patentdata ||
+          parsedData.patentFileWrapperDataBag ||
           parsedData.response?.docs || 
           parsedData.docs || 
           parsedData.results || 
