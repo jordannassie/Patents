@@ -111,6 +111,10 @@ export default function PatentDetailPage() {
   const [generatingConcept, setGeneratingConcept] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Auto-generation flags
+  const [hasStartedAutoAnalyze, setHasStartedAutoAnalyze] = useState(false);
+  const [hasStartedAutoConcept, setHasStartedAutoConcept] = useState(false);
 
   useEffect(() => {
     async function loadPatentAndReport() {
@@ -186,6 +190,68 @@ export default function PatentDetailPage() {
       loadPatentAndReport();
     }
   }, [patentId]);
+
+  // Auto-generate AI report if missing
+  useEffect(() => {
+    async function autoGenerateReport() {
+      if (!patent || loading || report || generating || hasStartedAutoAnalyze) return;
+      
+      setHasStartedAutoAnalyze(true);
+      setGenerating(true);
+
+      try {
+        const response = await fetch("/api/patents/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patentResultId: patent.id }),
+        });
+
+        if (!response.ok) throw new Error("AI analysis failed");
+
+        const data = await response.json();
+        setReport(data.report);
+      } catch (err) {
+        console.error("Auto-generate report error:", err);
+      } finally {
+        setGenerating(false);
+      }
+    }
+
+    if (patent && !loading && !report && !hasStartedAutoAnalyze) {
+      autoGenerateReport();
+    }
+  }, [patent, loading, report, generating, hasStartedAutoAnalyze]);
+
+  // Auto-generate $1B concept if report exists but concept missing
+  useEffect(() => {
+    async function autoGenerateConcept() {
+      if (!patent || !report || concept || generatingConcept || hasStartedAutoConcept) return;
+
+      setHasStartedAutoConcept(true);
+      setGeneratingConcept(true);
+
+      try {
+        const response = await fetch("/api/patents/generate-concept", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patentResultId: patent.id }),
+        });
+
+        if (!response.ok) throw new Error("$1B concept generation failed");
+
+        const data = await response.json();
+        setConcept(data.concept);
+      } catch (err) {
+        console.error("Auto-generate concept error:", err);
+      } finally {
+        setGeneratingConcept(false);
+      }
+    }
+
+    if (patent && report && !concept && !hasStartedAutoConcept) {
+      autoGenerateConcept();
+    }
+  }, [patent, report, concept, generatingConcept, hasStartedAutoConcept]);
 
   const handleGenerateReport = async () => {
     if (!patent) return;
