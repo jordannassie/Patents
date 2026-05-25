@@ -81,9 +81,9 @@ export default function PatentPlansPage() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-3">Patent Creation Plans</h1>
+          <h1 className="text-4xl font-bold text-white mb-3">Patent Plans</h1>
           <p className="text-xl text-zinc-400">
-            PatentBoom ranks the strongest new patents to create from old patent signals and future bottlenecks.
+            Best patents to create, ranked by score
           </p>
         </div>
 
@@ -195,22 +195,16 @@ export default function PatentPlansPage() {
                   {plan.recommended_patent_title}
                 </h3>
 
-                {/* Future Bottleneck */}
+                {/* Why Big */}
                 <div className="mb-3">
-                  <div className="text-xs text-zinc-500 mb-1">Future Bottleneck</div>
-                  <p className="text-sm text-zinc-400 line-clamp-2">{plan.future_bottleneck}</p>
-                </div>
-
-                {/* Why This Is Best */}
-                <div className="mb-3">
-                  <div className="text-xs text-zinc-500 mb-1">Why This Could Be Big</div>
+                  <div className="text-xs text-zinc-500 mb-1">Why Big</div>
                   <p className="text-sm text-zinc-300 line-clamp-2">{plan.why_this_is_best}</p>
                 </div>
 
-                {/* Target Buyers */}
+                {/* Who Buys */}
                 {plan.target_buyers && plan.target_buyers.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-xs text-zinc-500 mb-1">Target Buyers</div>
+                  <div className="mb-3">
+                    <div className="text-xs text-zinc-500 mb-1">Who Buys</div>
                     <div className="flex flex-wrap gap-1">
                       {plan.target_buyers.slice(0, 2).map((buyer, bidx) => (
                         <span key={bidx} className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded">
@@ -223,6 +217,12 @@ export default function PatentPlansPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Future Bottleneck */}
+                <div className="mb-4">
+                  <div className="text-xs text-zinc-500 mb-1">Future Bottleneck</div>
+                  <p className="text-sm text-zinc-400 line-clamp-2">{plan.future_bottleneck}</p>
+                </div>
 
                 {/* Open Plan Button */}
                 <div className="mt-4 pt-4 border-t border-zinc-800">

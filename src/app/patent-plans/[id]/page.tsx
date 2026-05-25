@@ -143,12 +143,12 @@ export default function PatentPlanDetailPage() {
         </Link>
 
         {/* Hero Section */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white mb-2">Patent Creation Plan</h1>
-              <p className="text-zinc-400">What NEW patent to file based on this signal</p>
-            </div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 mb-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">Patent Plan</h1>
+                <p className="text-zinc-400">Best patent to create</p>
+              </div>
             <div className="flex flex-col items-end gap-2">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
                 <div className="text-center">
@@ -169,12 +169,12 @@ export default function PatentPlanDetailPage() {
             <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h2 className="text-2xl font-bold text-emerald-300">Recommended Patent to File</h2>
+            <h2 className="text-2xl font-bold text-emerald-300">What to File</h2>
           </div>
           <h3 className="text-xl font-bold text-white mb-3">{plan.recommended_patent_title}</h3>
           <p className="text-emerald-100 mb-4">{plan.recommended_patent_summary}</p>
           <div className="rounded-lg bg-emerald-900/20 border border-emerald-800 p-4">
-            <h4 className="text-sm font-medium text-emerald-400 mb-2">Why This Is Best</h4>
+            <h4 className="text-sm font-medium text-emerald-400 mb-2">Why Big</h4>
             <p className="text-sm text-emerald-100">{plan.why_this_is_best}</p>
           </div>
         </div>
@@ -216,7 +216,7 @@ export default function PatentPlanDetailPage() {
         {/* New Patent Ideas */}
         {plan.new_patent_ideas && plan.new_patent_ideas.length > 0 && (
           <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">New Patent Ideas</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Best Patents to Create</h2>
             <div className="space-y-4">
               {plan.new_patent_ideas.map((idea, idx) => (
                 <div key={idx} className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
@@ -257,7 +257,7 @@ export default function PatentPlanDetailPage() {
         {/* Filing Priority Rankings */}
         {plan.filing_priority_rankings && plan.filing_priority_rankings.length > 0 && (
           <div className="mb-6 rounded-xl border border-purple-800 bg-purple-950/50 p-6">
-            <h2 className="text-xl font-bold text-purple-300 mb-4">Filing Priority Rankings</h2>
+            <h2 className="text-xl font-bold text-purple-300 mb-4">What to File First</h2>
             <div className="space-y-3">
               {plan.filing_priority_rankings.map((ranking, idx) => (
                 <div key={idx} className="rounded-lg bg-purple-900/20 border border-purple-800 p-4">
@@ -316,7 +316,7 @@ export default function PatentPlanDetailPage() {
         {/* Target Buyers */}
         {plan.target_buyers && plan.target_buyers.length > 0 && (
           <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Who Would Buy This</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Who Buys</h2>
             <div className="space-y-3">
               {plan.target_buyers.map((buyer, idx) => (
                 <div key={idx} className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
@@ -331,7 +331,7 @@ export default function PatentPlanDetailPage() {
         {/* Venture Angle */}
         {plan.venture_angle && (
           <div className="mb-6 rounded-xl border border-cyan-800 bg-cyan-950/50 p-6">
-            <h2 className="text-xl font-bold text-cyan-300 mb-4">Venture Angle</h2>
+            <h2 className="text-xl font-bold text-cyan-300 mb-4">What to Build</h2>
             <p className="text-cyan-100">{plan.venture_angle}</p>
           </div>
         )}
@@ -339,7 +339,7 @@ export default function PatentPlanDetailPage() {
         {/* Founder Next Steps */}
         {plan.founder_next_steps && plan.founder_next_steps.length > 0 && (
           <div className="mb-6 rounded-xl border border-blue-800 bg-blue-950/50 p-6">
-            <h2 className="text-xl font-bold text-blue-300 mb-4">Founder Next Steps</h2>
+            <h2 className="text-xl font-bold text-blue-300 mb-4">What to Do Next</h2>
             <div className="space-y-3">
               {plan.founder_next_steps.map((step, idx) => (
                 <div key={idx} className="flex gap-3 items-start">
