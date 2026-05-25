@@ -44,9 +44,33 @@ export async function GET(request: Request) {
       .limit(1)
       .maybeSingle();
 
+    // Load venture plan for this patent
+    const { data: venturePlan } = await supabase
+      .from('patent_venture_plans')
+      .select('*')
+      .eq('patent_result_id', id)
+      .maybeSingle();
+
+    // Load concept report for this patent
+    const { data: concept } = await supabase
+      .from('patent_concept_reports')
+      .select('*')
+      .eq('patent_result_id', id)
+      .maybeSingle();
+
+    // Load hunter item for this patent
+    const { data: hunterItem } = await supabase
+      .from('opportunity_hunter_items')
+      .select('*')
+      .eq('patent_result_id', id)
+      .maybeSingle();
+
     return NextResponse.json({
       patent,
       report: report || null,
+      venturePlan: venturePlan || null,
+      concept: concept || null,
+      hunterItem: hunterItem || null,
     });
   } catch (error) {
     console.error('[By ID] Error:', error);
