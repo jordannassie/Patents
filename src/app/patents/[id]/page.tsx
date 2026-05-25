@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import CopyForGPTButton from "@/components/CopyForGPTButton";
-import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
+import { formatOpportunityForGPT, formatQuickGPTPrompt } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentData {
   id: string;
@@ -368,11 +368,19 @@ export default function PatentDetailPage() {
             <p className="text-sm text-zinc-400 mb-4">
               Copy this patent opportunity to ChatGPT for help improving the idea, strengthening claims, or drafting the patent.
             </p>
-            <CopyForGPTButton
-              text={formatOpportunityForGPT(creationPlan)}
-              label="Copy for GPT"
-              variant="primary"
-            />
+            <div className="flex flex-wrap gap-3">
+              <CopyForGPTButton
+                text={formatOpportunityForGPT(creationPlan)}
+                label="Copy for GPT"
+                variant="primary"
+              />
+              <CopyForGPTButton
+                text={formatQuickGPTPrompt(creationPlan)}
+                label="Quick GPT Prompt"
+                copiedLabel="Quick prompt copied!"
+                variant="secondary"
+              />
+            </div>
           </div>
         )}
 

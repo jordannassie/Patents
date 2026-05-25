@@ -5,7 +5,7 @@ import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
 import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatPatentIdeaSummary } from "@/lib/patents/formatPatentIdeaForCopy";
-import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
+import { formatOpportunityForGPT, formatQuickGPTPrompt } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentCreationPlan {
   id: string;
@@ -263,15 +263,23 @@ export default function PatentPlansPage() {
                   >
                     Open Plan
                   </Link>
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <CopyButton
-                      text={formatPatentIdeaSummary(plan as any)}
-                      label="Copy"
-                      variant="small"
-                    />
+                  <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                     <CopyForGPTButton
                       text={formatOpportunityForGPT(plan as any)}
                       label="Copy for GPT"
+                      variant="small"
+                    />
+                    <CopyForGPTButton
+                      text={formatQuickGPTPrompt(plan as any)}
+                      label="Quick GPT"
+                      copiedLabel="Quick prompt copied!"
+                      variant="small"
+                    />
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <CopyButton
+                      text={formatPatentIdeaSummary(plan as any)}
+                      label="Copy Summary"
                       variant="small"
                     />
                   </div>

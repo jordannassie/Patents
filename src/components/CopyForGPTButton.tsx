@@ -5,12 +5,14 @@ import { useState } from "react";
 interface CopyForGPTButtonProps {
   text: string;
   label?: string;
+  copiedLabel?: string;
   variant?: "primary" | "secondary" | "small";
 }
 
 export default function CopyForGPTButton({
   text,
   label = "Copy for GPT",
+  copiedLabel = "Copied for GPT!",
   variant = "secondary",
 }: CopyForGPTButtonProps) {
   const [copied, setCopied] = useState(false);
@@ -63,10 +65,10 @@ export default function CopyForGPTButton({
     <button
       onClick={handleCopy}
       className={`${baseStyles} ${variantStyles[variant]}`}
-      title={copied ? "Copied for GPT!" : label}
+      title={copied ? copiedLabel : label}
     >
       {getIcon()}
-      {copied ? "Copied for GPT!" : error ? "Failed" : label}
+      {copied ? copiedLabel : error ? "Failed" : label}
     </button>
   );
 }

@@ -6,7 +6,7 @@ import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
 import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatPatentPlanForCopy, formatAttorneyReviewPackage } from "@/lib/patents/formatPatentIdeaForCopy";
-import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
+import { formatOpportunityForGPT, formatQuickGPTPrompt } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentCreationPlan {
   id: string;
@@ -207,6 +207,12 @@ export default function PatentPlanDetailPage() {
               text={formatOpportunityForGPT(plan)}
               label="Copy for GPT"
               variant="primary"
+            />
+            <CopyForGPTButton
+              text={formatQuickGPTPrompt(plan)}
+              label="Quick GPT Prompt"
+              copiedLabel="Quick prompt copied!"
+              variant="secondary"
             />
             <CopyButton
               text={formatPatentPlanForCopy(plan)}

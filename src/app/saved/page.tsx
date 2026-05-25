@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import CopyForGPTButton from "@/components/CopyForGPTButton";
-import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
+import { formatOpportunityForGPT, formatQuickGPTPrompt } from "@/lib/patents/formatOpportunityForGPT";
 
 interface HunterOpportunity {
   id: string;
@@ -162,21 +162,29 @@ export default function SavedPage() {
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex gap-2 pt-3 border-t border-zinc-800">
+                  <div className="space-y-2 pt-3 border-t border-zinc-800">
                     <Link
                       href={`/patents/${opp.patent_result_id}`}
-                      className="flex-1 text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      className="block text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                     >
                       Open Plan
                     </Link>
                     {opp.has_plan && opp.plan ? (
-                      <CopyForGPTButton
-                        text={formatOpportunityForGPT(opp.plan)}
-                        label="Copy for GPT"
-                        variant="small"
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <CopyForGPTButton
+                          text={formatOpportunityForGPT(opp.plan)}
+                          label="Copy for GPT"
+                          variant="small"
+                        />
+                        <CopyForGPTButton
+                          text={formatQuickGPTPrompt(opp.plan)}
+                          label="Quick GPT"
+                          copiedLabel="Quick prompt copied!"
+                          variant="small"
+                        />
+                      </div>
                     ) : (
-                      <div className="px-3 py-1.5 text-xs text-zinc-500 bg-zinc-800 border border-zinc-700 rounded-lg">
+                      <div className="px-3 py-1.5 text-xs text-center text-zinc-500 bg-zinc-800 border border-zinc-700 rounded-lg">
                         Plan generating...
                       </div>
                     )}
