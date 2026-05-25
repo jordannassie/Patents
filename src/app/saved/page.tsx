@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import CopyForGPTButton from "@/components/CopyForGPTButton";
+import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
 
 interface HunterOpportunity {
   id: string;
@@ -17,6 +19,8 @@ interface HunterOpportunity {
   has_concept: boolean;
   concept_title: string | null;
   concept_score: number | null;
+  has_plan?: boolean;
+  plan?: any;
   created_at: string;
 }
 
@@ -93,15 +97,14 @@ export default function SavedPage() {
           ) : hunterOpps.length > 0 ? (
             <div className="space-y-4">
               {hunterOpps.map((opp) => (
-                <Link
+                <div
                   key={opp.id}
-                  href={`/patents/${opp.patent_result_id}`}
-                  className="block bg-zinc-900/50 border border-zinc-800 rounded-lg p-5 hover:bg-zinc-800/50 hover:border-indigo-500/50 transition-all group"
+                  className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                        <h3 className="text-lg font-semibold text-white">
                           {opp.title}
                         </h3>
                         {opp.report_id ? (
@@ -116,6 +119,11 @@ export default function SavedPage() {
                         {opp.has_concept && (
                           <span className="px-2 py-1 text-xs font-medium bg-purple-900/50 text-purple-400 rounded">
                             $1B Concept Ready
+                          </span>
+                        )}
+                        {opp.has_plan && (
+                          <span className="px-2 py-1 text-xs font-medium bg-indigo-900/50 text-indigo-400 rounded">
+                            Plan Ready
                           </span>
                         )}
                       </div>
@@ -147,15 +155,33 @@ export default function SavedPage() {
                           {opp.opportunity_score ? 'AI Score' : 'Pre-AI'}
                         </div>
                       </div>
-                      <svg className="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 mb-3">
                     Saved {new Date(opp.created_at).toLocaleDateString()}
                   </div>
-                </Link>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-3 border-t border-zinc-800">
+                    <Link
+                      href={`/patents/${opp.patent_result_id}`}
+                      className="flex-1 text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Open Plan
+                    </Link>
+                    {opp.has_plan && opp.plan ? (
+                      <CopyForGPTButton
+                        text={formatOpportunityForGPT(opp.plan)}
+                        label="Copy for GPT"
+                        variant="small"
+                      />
+                    ) : (
+                      <div className="px-3 py-1.5 text-xs text-zinc-500 bg-zinc-800 border border-zinc-700 rounded-lg">
+                        Plan generating...
+                      </div>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (

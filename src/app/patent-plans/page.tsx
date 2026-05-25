@@ -3,22 +3,52 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
+import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatPatentIdeaSummary } from "@/lib/patents/formatPatentIdeaForCopy";
+import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentCreationPlan {
   id: string;
   source_title: string;
   source_summary: string;
+  source_status_estimate: string;
   future_bottleneck: string;
+  market_timing: string;
   recommended_patent_title: string;
   recommended_patent_summary: string;
   why_this_is_best: string;
-  target_buyers: Array<{
+  new_patent_ideas?: Array<{
+    title: string;
+    summary: string;
+    what_it_would_claim: string;
+    why_it_is_new_direction: string;
+    market_need: string;
+    score: number;
+  }>;
+  possible_claim_themes?: Array<{
+    claim_theme: string;
+    description: string;
+    novelty_angle: string;
+  }>;
+  system_architecture?: Array<{
+    component: string;
+    function: string;
+    why_it_matters: string;
+  }>;
+  target_buyers?: Array<{
     buyer: string;
     why_they_need_it: string;
   }>;
+  venture_angle: string;
+  founder_next_steps?: Array<{
+    step: string;
+    action: string;
+    outcome: string;
+  }>;
   score: number;
   priority: string;
+  risks: string;
+  attorney_review_note: string;
   created_at: string;
 }
 
@@ -226,17 +256,22 @@ export default function PatentPlansPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-4 pt-4 border-t border-zinc-800 flex gap-2">
+                <div className="mt-4 pt-4 border-t border-zinc-800 space-y-2">
                   <Link
                     href={`/patent-plans/${plan.id}`}
-                    className="flex-1 text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    className="block text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                   >
                     Open Plan
                   </Link>
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <CopyButton
                       text={formatPatentIdeaSummary(plan as any)}
                       label="Copy"
+                      variant="small"
+                    />
+                    <CopyForGPTButton
+                      text={formatOpportunityForGPT(plan as any)}
+                      label="Copy for GPT"
                       variant="small"
                     />
                   </div>

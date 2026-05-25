@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
+import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatPatentPlanForCopy, formatAttorneyReviewPackage } from "@/lib/patents/formatPatentIdeaForCopy";
+import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentCreationPlan {
   id: string;
@@ -201,14 +203,14 @@ export default function PatentPlanDetailPage() {
         <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h2 className="text-lg font-bold text-white mb-4">Copy Patent Plan</h2>
           <div className="flex flex-wrap gap-3">
-            <CopyButton
-              text={formatPatentPlanForCopy(plan)}
-              label="Copy Patent Plan"
+            <CopyForGPTButton
+              text={formatOpportunityForGPT(plan)}
+              label="Copy for GPT"
               variant="primary"
             />
             <CopyButton
               text={formatPatentPlanForCopy(plan)}
-              label="Copy for ChatGPT"
+              label="Copy Patent Plan"
               variant="secondary"
             />
             <CopyButton
@@ -218,6 +220,31 @@ export default function PatentPlanDetailPage() {
             />
           </div>
         </div>
+
+        {/* GPT Copy Prompt - Collapsible */}
+        <details className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/30">
+          <summary className="cursor-pointer px-6 py-4 text-sm font-medium text-zinc-400 hover:text-zinc-300">
+            GPT Copy Prompt
+          </summary>
+          <div className="border-t border-zinc-800 p-6">
+            <p className="text-sm text-zinc-400 mb-3">
+              Complete GPT prompt with instructions to help improve this patent:
+            </p>
+            <textarea
+              readOnly
+              value={formatOpportunityForGPT(plan)}
+              className="w-full h-96 rounded-lg border border-zinc-700 bg-zinc-800 p-4 text-sm text-zinc-300 font-mono"
+              onClick={(e) => e.currentTarget.select()}
+            />
+            <div className="mt-3">
+              <CopyForGPTButton
+                text={formatOpportunityForGPT(plan)}
+                label="Copy for GPT"
+                variant="secondary"
+              />
+            </div>
+          </div>
+        </details>
 
         {/* Copy/Paste Version - Collapsible */}
         <details className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/30">

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
+import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatFullDraftForCopy, formatClaimsOnly } from "@/lib/patents/formatPatentIdeaForCopy";
+import { formatDraftForGPT } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentFullDraft {
   id: string;
@@ -145,10 +147,15 @@ export default function PatentDraftDetailPage() {
         <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h2 className="text-lg font-bold text-white mb-4">Export Patent Draft</h2>
           <div className="flex flex-wrap gap-3">
+            <CopyForGPTButton
+              text={formatDraftForGPT(draft)}
+              label="Copy Draft for GPT"
+              variant="primary"
+            />
             <CopyButton
               text={formatFullDraftForCopy(draft)}
               label="Copy Full Draft"
-              variant="primary"
+              variant="secondary"
             />
             <CopyButton
               text={formatClaimsOnly(draft)}

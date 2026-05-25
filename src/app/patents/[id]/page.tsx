@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import CopyForGPTButton from "@/components/CopyForGPTButton";
+import { formatOpportunityForGPT } from "@/lib/patents/formatOpportunityForGPT";
 
 interface PatentData {
   id: string;
@@ -358,6 +360,29 @@ export default function PatentDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Copy for GPT Button */}
+        {creationPlan && (
+          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <h2 className="text-lg font-bold text-white mb-3">Copy for GPT</h2>
+            <p className="text-sm text-zinc-400 mb-4">
+              Copy this patent opportunity to ChatGPT for help improving the idea, strengthening claims, or drafting the patent.
+            </p>
+            <CopyForGPTButton
+              text={formatOpportunityForGPT(creationPlan)}
+              label="Copy for GPT"
+              variant="primary"
+            />
+          </div>
+        )}
+
+        {!creationPlan && !generatingPlan && !planError && (
+          <div className="mt-6 rounded-xl border border-zinc-700 bg-zinc-800/50 p-6">
+            <p className="text-zinc-400 text-sm">
+              Patent plan is still being generated. Copy for GPT will be available once the plan is ready.
+            </p>
+          </div>
+        )}
 
         {planError && (
           <div className={`mt-6 rounded-xl border p-6 ${
