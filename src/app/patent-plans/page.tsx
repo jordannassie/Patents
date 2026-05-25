@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import CopyButton from "@/components/CopyButton";
+import { formatPatentIdeaSummary } from "@/lib/patents/formatPatentIdeaForCopy";
 
 interface PatentCreationPlan {
   id: string;
@@ -167,10 +169,9 @@ export default function PatentPlansPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPlans.map((plan, idx) => (
-              <Link
+              <div
                 key={plan.id}
-                href={`/patent-plans/${plan.id}`}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900"
+                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
               >
                 {/* Rank and Score */}
                 <div className="flex items-start justify-between mb-4">
@@ -224,16 +225,23 @@ export default function PatentPlansPage() {
                   <p className="text-sm text-zinc-400 line-clamp-2">{plan.future_bottleneck}</p>
                 </div>
 
-                {/* Open Plan Button */}
-                <div className="mt-4 pt-4 border-t border-zinc-800">
-                  <span className="text-sm text-blue-400 flex items-center gap-2">
+                {/* Action Buttons */}
+                <div className="mt-4 pt-4 border-t border-zinc-800 flex gap-2">
+                  <Link
+                    href={`/patent-plans/${plan.id}`}
+                    className="flex-1 text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
                     Open Plan
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
+                  </Link>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <CopyButton
+                      text={formatPatentIdeaSummary(plan as any)}
+                      label="Copy"
+                      variant="small"
+                    />
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

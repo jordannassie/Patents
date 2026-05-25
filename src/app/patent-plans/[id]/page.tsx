@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import CopyButton from "@/components/CopyButton";
+import { formatPatentPlanForCopy, formatAttorneyReviewPackage } from "@/lib/patents/formatPatentIdeaForCopy";
 
 interface PatentCreationPlan {
   id: string;
@@ -194,6 +196,53 @@ export default function PatentPlanDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Copy Buttons */}
+        <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="text-lg font-bold text-white mb-4">Copy Patent Plan</h2>
+          <div className="flex flex-wrap gap-3">
+            <CopyButton
+              text={formatPatentPlanForCopy(plan)}
+              label="Copy Patent Plan"
+              variant="primary"
+            />
+            <CopyButton
+              text={formatPatentPlanForCopy(plan)}
+              label="Copy for ChatGPT"
+              variant="secondary"
+            />
+            <CopyButton
+              text={formatAttorneyReviewPackage(plan, fullDraft)}
+              label="Copy for Attorney"
+              variant="secondary"
+            />
+          </div>
+        </div>
+
+        {/* Copy/Paste Version - Collapsible */}
+        <details className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/30">
+          <summary className="cursor-pointer px-6 py-4 text-sm font-medium text-zinc-400 hover:text-zinc-300">
+            Copy/Paste Version (Manual Select)
+          </summary>
+          <div className="border-t border-zinc-800 p-6">
+            <p className="text-sm text-zinc-400 mb-3">
+              If the copy buttons don't work, you can manually select and copy the text below:
+            </p>
+            <textarea
+              readOnly
+              value={formatPatentPlanForCopy(plan)}
+              className="w-full h-96 rounded-lg border border-zinc-700 bg-zinc-800 p-4 text-sm text-zinc-300 font-mono"
+              onClick={(e) => e.currentTarget.select()}
+            />
+            <div className="mt-3">
+              <CopyButton
+                text={formatPatentPlanForCopy(plan)}
+                label="Copy All"
+                variant="secondary"
+              />
+            </div>
+          </div>
+        </details>
 
         {/* Recommended Patent */}
         <div className="mb-6 rounded-xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-950/50 to-teal-950/50 p-8">

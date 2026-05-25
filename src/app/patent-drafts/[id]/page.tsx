@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import CopyButton from "@/components/CopyButton";
+import { formatFullDraftForCopy, formatClaimsOnly } from "@/lib/patents/formatPatentIdeaForCopy";
 
 interface PatentFullDraft {
   id: string;
@@ -136,6 +138,23 @@ export default function PatentDraftDetailPage() {
                 Patentability, freedom to operate, claim scope, prior art, and filing strategy must all be reviewed and refined by counsel before filing.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Copy Buttons */}
+        <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="text-lg font-bold text-white mb-4">Export Patent Draft</h2>
+          <div className="flex flex-wrap gap-3">
+            <CopyButton
+              text={formatFullDraftForCopy(draft)}
+              label="Copy Full Draft"
+              variant="primary"
+            />
+            <CopyButton
+              text={formatClaimsOnly(draft)}
+              label="Copy Claims Only"
+              variant="secondary"
+            />
           </div>
         </div>
 
