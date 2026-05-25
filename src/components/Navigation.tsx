@@ -35,14 +35,14 @@ export default function Navigation() {
                 Hunter
               </Link>
               <Link
-                href="/search"
+                href="/patent-plans"
                 className={`text-sm font-medium transition-colors ${
-                  isActive("/search")
+                  pathname === "/patent-plans" || pathname.startsWith("/patent-plans")
                     ? "text-white"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                Search
+                Patent Plans
               </Link>
               <Link
                 href="/hunter/runs"
@@ -53,6 +53,16 @@ export default function Navigation() {
                 }`}
               >
                 Runs
+              </Link>
+              <Link
+                href="/search"
+                className={`text-sm font-medium transition-colors ${
+                  isActive("/search")
+                    ? "text-white"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Search
               </Link>
               <Link
                 href="/saved"
@@ -67,10 +77,10 @@ export default function Navigation() {
             </div>
           </div>
           <Link
-            href="/hunter"
+            href="/patent-plans"
             className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
-            View Live Engine
+            View Patent Plans
           </Link>
         </div>
       </div>

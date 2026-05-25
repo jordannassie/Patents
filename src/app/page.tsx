@@ -9,22 +9,23 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Find the invention hiding inside the{" "}
+              What{" "}
               <span className="bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
-                future bottleneck
+                NEW patent
               </span>
+              {" "}should you create next?
             </h1>
             <p className="mt-6 text-lg leading-8 text-zinc-400 sm:text-xl">
-              PatentBoom runs an AI-powered Hunter Engine that searches patent records, 
-              identifies likely old or expired invention opportunities, and ranks which ones 
-              could become billion-dollar AI-era ventures.
+              PatentBoom is an AI-powered patent creation engine. 
+              It finds old patent signals, matches them to future bottlenecks, 
+              and generates ranked plans for what NEW patents to file.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                href="/hunter"
+                href="/patent-plans"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
               >
-                View Live Hunter Engine
+                View Patent Plans
                 <svg
                   className="h-5 w-5"
                   fill="none"
@@ -40,10 +41,10 @@ export default function Home() {
                 </svg>
               </Link>
               <Link
-                href="/search"
+                href="/hunter"
                 className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-zinc-800"
               >
-                Research Search
+                View Live Engine
               </Link>
             </div>
           </div>
@@ -62,10 +63,10 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Automated Patent Opportunity Intelligence
+              Automated Patent Creation Intelligence
             </h2>
             <p className="mt-4 text-lg text-zinc-400">
-              The Hunter Engine runs 24/7, scanning for future bottleneck opportunities
+              The engine generates and ranks new patent creation plans automatically
             </p>
           </div>
 
@@ -122,11 +123,11 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-white">
-                AI Venture Analysis
+                AI Patent Generation
               </h3>
               <p className="mt-2 text-zinc-400">
-                Generates modernization angles, new patent directions, venture concepts, 
-                and opportunity scores.
+                Generates new patent filing recommendations, claim themes, system architecture, 
+                and founder action plans automatically.
               </p>
             </div>
 
@@ -152,11 +153,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-white">
-                Opportunity Pipeline
+                Patent Creation Pipeline
               </h3>
               <p className="mt-2 text-zinc-400">
-                Saves the best opportunities into a ranked pipeline for follow-up, 
-                patent review, and venture creation.
+                Saves the best patent plans into a ranked pipeline: Best to File, Top Target, Strong, and Watch.
               </p>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function Home() {
               How It Works
             </h2>
             <p className="mt-4 text-lg text-zinc-400">
-              From future bottleneck to patent-backed venture
+              From patent signal to recommended patent creation plan
             </p>
           </div>
 
@@ -221,10 +221,10 @@ export default function Home() {
                 <span className="text-xl font-bold text-white">4</span>
               </div>
               <h3 className="text-xl font-semibold text-white">
-                AI ranks opportunities
+                AI generates patent plans
               </h3>
               <p className="mt-2 text-zinc-400">
-                Scores and analyzes the best candidates.
+                Creates new patent filing recommendations with claim themes, architecture, and priority rankings.
               </p>
             </div>
 
@@ -234,10 +234,10 @@ export default function Home() {
                 <span className="text-xl font-bold text-white">5</span>
               </div>
               <h3 className="text-xl font-semibold text-white">
-                Review top ventures
+                Review patent plans
               </h3>
               <p className="mt-2 text-zinc-400">
-                Explore patent-backed venture opportunities.
+                Explore ranked patent creation plans and decide what to file first.
               </p>
             </div>
           </div>
@@ -368,17 +368,17 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black p-12 text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Ready to discover billion-dollar bottlenecks?
+              Ready to see what NEW patents you should create?
             </h2>
             <p className="mt-4 text-lg text-zinc-400">
-              Launch the Hunter Engine and start building your opportunity pipeline.
+              View ranked patent creation plans or launch the Hunter Engine to discover more.
             </p>
             <div className="mt-8">
               <Link
-                href="/hunter"
+                href="/patent-plans"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Launch Hunter
+                View Patent Plans
                 <svg
                   className="h-5 w-5"
                   fill="none"
