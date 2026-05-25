@@ -457,6 +457,83 @@ export default function PatentDetailPage() {
           </div>
         </div>
 
+        {/* Progress Flow - Show if Hunter Context exists */}
+        {hunterContext && (
+          <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Patent Idea Development Flow</h3>
+            <div className="flex items-center justify-between">
+              {/* Step 1: Patent Found */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-900/50 border-2 border-green-600">
+                    <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-green-400">Patent Found</div>
+                    <div className="text-xs text-gray-500">Saved by Hunter</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-12 h-0.5 bg-gray-700"></div>
+
+              {/* Step 2: AI Report */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                    report ? 'bg-green-900/50 border-2 border-green-600' : 'bg-gray-800 border-2 border-gray-700'
+                  }`}>
+                    {report ? (
+                      <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="text-gray-500 font-bold">2</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className={`text-sm font-medium ${report ? 'text-green-400' : 'text-gray-400'}`}>
+                      AI Report
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {report ? 'Complete' : 'Not generated'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`w-12 h-0.5 ${report ? 'bg-gray-700' : 'bg-gray-800'}`}></div>
+
+              {/* Step 3: $1B Concept */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                    concept ? 'bg-green-900/50 border-2 border-green-600' : 'bg-gray-800 border-2 border-gray-700'
+                  }`}>
+                    {concept ? (
+                      <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="text-gray-500 font-bold">3</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className={`text-sm font-medium ${concept ? 'text-green-400' : 'text-gray-400'}`}>
+                      $1B Concept
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {concept ? 'Complete' : 'Not generated'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Hunter Opportunity Context */}
         {hunterContext && (
           <div className="mt-6 rounded-xl border border-indigo-800 bg-indigo-900/20 p-6">
@@ -538,6 +615,77 @@ export default function PatentDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
+              </div>
+            )}
+
+            {/* Next Step Helper Card - Show if no AI report exists */}
+            {!report && (
+              <div className="mt-6 rounded-lg border border-blue-700 bg-blue-900/30 p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-blue-300 mb-2">Next Step: Generate the Patent Idea</h4>
+                    <p className="text-sm text-blue-200 mb-4">
+                      This opportunity has been saved by the Hunter because it matches a future bottleneck. 
+                      Generate an AI Opportunity Report to turn it into modernization angles, venture concepts, 
+                      and possible new patent directions.
+                    </p>
+                    <button
+                      onClick={handleGenerateReport}
+                      disabled={generating}
+                      className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {generating ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Analyzing patent opportunity...
+                        </span>
+                      ) : (
+                        'Generate AI Opportunity Report'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Next Step: $1B Concept - Show if AI report exists but no concept */}
+            {report && !concept && (
+              <div className="mt-6 rounded-lg border border-purple-700 bg-purple-900/30 p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-purple-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-purple-300 mb-2">Next Step: Generate $1B Patent Concept</h4>
+                    <p className="text-sm text-purple-200 mb-4">
+                      You have the AI Opportunity Report. Now generate a complete $1B Patent Concept with system architecture, 
+                      claim directions, venture strategy, and provisional patent draft starter.
+                    </p>
+                    <button
+                      onClick={handleGenerateConcept}
+                      disabled={generatingConcept}
+                      className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {generatingConcept ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Generating $1B patent concept...
+                        </span>
+                      ) : (
+                        'Generate $1B Patent Concept'
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
