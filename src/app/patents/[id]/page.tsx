@@ -101,7 +101,13 @@ export default function PatentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [planError, setPlanError] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<{
+    message: string;
+    stage?: string;
+    details?: string;
+    hint?: string;
+    isFallback?: boolean;
+  } | null>(null);
   const [hasStartedAutoGenerate, setHasStartedAutoGenerate] = useState(false);
 
   // Load patent and venture plan
@@ -150,15 +156,30 @@ export default function PatentDetailPage() {
           body: JSON.stringify({ patentResultId: patent.id }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error("Plan generation failed");
+          throw new Error(data.details || data.error || "Plan generation failed");
         }
 
-        const data = await response.json();
         setCreationPlan(data.plan);
+        
+        // Check if fallback plan
+        if (data.isFallback) {
+          setPlanError({
+            message: data.message || "Fallback plan generated",
+            isFallback: true,
+            hint: "Retry generation for full AI-powered analysis"
+          });
+        }
       } catch (err) {
         console.error("Auto-generate plan error:", err);
-        setPlanError("PatentBoom could not complete the plan. Retry is available in Advanced Details.");
+        const errorData = err instanceof Error ? err.message : "Unknown error";
+        setPlanError({
+          message: "Plan generation needs attention",
+          details: errorData,
+          hint: "Retry is available in Advanced Details. Check debug console for more info."
+        });
       } finally {
         setGeneratingPlan(false);
       }
@@ -182,15 +203,31 @@ export default function PatentDetailPage() {
         body: JSON.stringify({ patentResultId: patent.id, force: true }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Plan generation failed");
+        throw new Error(data.details || data.error || "Plan generation failed");
       }
 
-      const data = await response.json();
       setCreationPlan(data.plan);
+      setPlanError(null);
+      
+      // Check if fallback plan
+      if (data.isFallback) {
+        setPlanError({
+          message: data.message || "Fallback plan generated",
+          isFallback: true,
+          hint: "Retry generation for full AI-powered analysis"
+        });
+      }
     } catch (err) {
       console.error("Regenerate plan error:", err);
-      setPlanError("Plan generation failed. Please try again.");
+      const errorData = err instanceof Error ? err.message : "Unknown error";
+      setPlanError({
+        message: "Plan generation failed",
+        details: errorData,
+        hint: "Check server logs or try again later"
+      });
     } finally {
       setGeneratingPlan(false);
     }
@@ -323,13 +360,45 @@ export default function PatentDetailPage() {
         </div>
 
         {planError && (
-          <div className="mt-6 rounded-xl border border-red-700 bg-red-900/20 p-4">
+          <div className={`mt-6 rounded-xl border p-6 ${
+            planError.isFallback 
+              ? "border-yellow-700 bg-yellow-900/20" 
+              : "border-red-700 bg-red-900/20"
+          }`}>
             <div className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
+                planError.isFallback ? "text-yellow-400" : "text-red-400"
+              }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="text-red-300">{planError}</p>
+                <h4 className={`font-semibold mb-2 ${
+                  planError.isFallback ? "text-yellow-300" : "text-red-300"
+                }`}>
+                  {planError.message}
+                </h4>
+                {planError.stage && (
+                  <p className="text-sm text-zinc-400 mb-1">
+                    <strong>Stage:</strong> {planError.stage}
+                  </p>
+                )}
+                {planError.details && (
+                  <p className="text-sm text-zinc-400 mb-2">
+                    <strong>Details:</strong> {planError.details}
+                  </p>
+                )}
+                {planError.hint && (
+                  <p className={`text-sm ${
+                    planError.isFallback ? "text-yellow-200" : "text-red-200"
+                  }`}>
+                    <strong>Hint:</strong> {planError.hint}
+                  </p>
+                )}
+                {planError.isFallback && creationPlan && (
+                  <p className="text-sm text-yellow-200 mt-3">
+                    A fallback plan is displayed below. Use "Regenerate Patent Plan" in Advanced Details for full AI analysis.
+                  </p>
+                )}
               </div>
             </div>
           </div>
