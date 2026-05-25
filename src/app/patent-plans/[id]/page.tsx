@@ -59,8 +59,11 @@ export default function PatentPlanDetailPage() {
   const planId = params.id as string;
   
   const [plan, setPlan] = useState<PatentCreationPlan | null>(null);
+  const [fullDraft, setFullDraft] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPlan() {
@@ -80,6 +83,35 @@ export default function PatentPlanDetailPage() {
       loadPlan();
     }
   }, [planId]);
+
+  const handleCreateFullDraft = async () => {
+    if (!plan) return;
+
+    setGeneratingDraft(true);
+    setDraftError(null);
+
+    try {
+      const response = await fetch("/api/patents/create-full-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patentCreationPlanId: plan.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || "Draft generation failed");
+      }
+
+      setFullDraft(data.draft);
+    } catch (err) {
+      console.error("Create full draft error:", err);
+      const errorData = err instanceof Error ? err.message : "Unknown error";
+      setDraftError(errorData);
+    } finally {
+      setGeneratingDraft(false);
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -356,6 +388,68 @@ export default function PatentPlanDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Next Step: Create Full Patent Draft */}
+        <div className="mb-6 rounded-xl border-2 border-purple-600 bg-gradient-to-br from-purple-950/50 to-indigo-950/50 p-8">
+          <div className="flex items-center gap-3 mb-4">
+            <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-purple-300">Next Step: Create the Full Patent Draft</h2>
+          </div>
+          
+          <p className="text-purple-100 mb-6">
+            PatentBoom has identified the new patent direction. Generate the full draft package next, then have a patent attorney review and refine it before filing.
+          </p>
+
+          {fullDraft ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-green-300 font-medium">Full Draft Ready</span>
+              </div>
+              <Link
+                href={`/patent-drafts/${fullDraft.id}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                View Full Draft
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+          ) : generatingDraft ? (
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-purple-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="text-purple-300 font-medium">PatentBoom is creating the full patent draft...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <button
+                onClick={handleCreateFullDraft}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-4 text-lg font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Full Patent Draft
+              </button>
+              <p className="text-sm text-purple-200">
+                Generate a structured patent draft package for attorney review
+              </p>
+              {draftError && (
+                <div className="rounded-lg border border-red-700 bg-red-900/20 p-3">
+                  <p className="text-sm text-red-300">{draftError}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Risks + Attorney Review */}
         <div className="mb-6 rounded-xl border border-orange-800 bg-orange-950/50 p-6">
