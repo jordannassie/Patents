@@ -52,6 +52,9 @@ interface Opportunity {
   bottleneck_reason: string;
   patent_result_id: string;
   report_id: string | null;
+  has_concept: boolean;
+  concept_title: string | null;
+  concept_score: number | null;
 }
 
 interface RunningRun {
@@ -1041,6 +1044,11 @@ export default function HunterPage() {
                         ) : (
                           <span className="px-2 py-0.5 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
                             Pre-AI Candidate
+                          </span>
+                        )}
+                        {opp.has_concept && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-purple-900/50 text-purple-400 rounded">
+                            $1B Concept
                           </span>
                         )}
                       </div>

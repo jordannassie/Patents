@@ -15,7 +15,17 @@ export async function GET(request: Request) {
 
     const { data: opportunities, error } = await supabase
       .from('opportunity_hunter_items')
-      .select('*')
+      .select(`
+        *,
+        patent_results (
+          id
+        ),
+        patent_concept_reports (
+          id,
+          concept_title,
+          overall_score
+        )
+      `)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -27,7 +37,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ items: opportunities || [] });
+    // Flatten the response to include concept info at top level
+    const flattenedOpportunities = opportunities?.map((opp: any) => ({
+      ...opp,
+      has_concept: !!(opp.patent_concept_reports && opp.patent_concept_reports.length > 0),
+      concept_title: opp.patent_concept_reports?.[0]?.concept_title || null,
+      concept_score: opp.patent_concept_reports?.[0]?.overall_score || null,
+    })) || [];
+
+    return NextResponse.json({ items: flattenedOpportunities });
   } catch (error) {
     console.error('[Hunter Opportunities] Error:', error);
     return NextResponse.json(

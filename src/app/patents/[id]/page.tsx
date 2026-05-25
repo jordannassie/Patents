@@ -58,6 +58,46 @@ interface HunterContext {
   report_id: string | null;
 }
 
+interface ConceptReport {
+  id: string;
+  concept_title: string;
+  bottleneck_solved: string;
+  why_now: string;
+  old_invention_insight: string;
+  new_invention_concept: string;
+  system_architecture: Array<{
+    component: string;
+    function: string;
+    why_it_matters: string;
+  }>;
+  ai_upgrade_layers: Array<{
+    layer: string;
+    description: string;
+  }>;
+  possible_claim_directions: Array<{
+    claim_direction: string;
+    description: string;
+    novelty_angle: string;
+  }>;
+  venture_concept: {
+    name: string;
+    description: string;
+    business_model: string;
+    pricing_or_revenue_model: string;
+  };
+  target_customers: Array<{
+    customer: string;
+    why_they_need_it: string;
+  }>;
+  billion_dollar_thesis: string;
+  darpa_relevance: string | null;
+  risks: string;
+  attorney_review_notes: string;
+  provisional_draft_starter: any;
+  overall_score: number;
+  created_at: string;
+}
+
 export default function PatentDetailPage() {
   const params = useParams();
   const patentId = params.id as string;
@@ -65,8 +105,10 @@ export default function PatentDetailPage() {
   const [patent, setPatent] = useState<PatentData | null>(null);
   const [report, setReport] = useState<OpportunityReport | null>(null);
   const [hunterContext, setHunterContext] = useState<HunterContext | null>(null);
+  const [concept, setConcept] = useState<ConceptReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatingConcept, setGeneratingConcept] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -96,6 +138,26 @@ export default function PatentDetailPage() {
         // Load report if it exists
         if (patentData.report) {
           setReport(patentData.report);
+        }
+
+        // Load concept if it exists
+        if (patentData.concept) {
+          setConcept(patentData.concept);
+        } else {
+          // Try loading concept separately
+          try {
+            const conceptResponse = await fetch(
+              `/api/patents/by-id?id=${encodeURIComponent(patentData.patent.id)}`
+            );
+            if (conceptResponse.ok) {
+              const conceptData = await conceptResponse.json();
+              if (conceptData.concept) {
+                setConcept(conceptData.concept);
+              }
+            }
+          } catch (conceptErr) {
+            console.log('No concept found for this patent');
+          }
         }
 
         // Load Hunter context if this patent was saved by Hunter
@@ -152,6 +214,36 @@ export default function PatentDetailPage() {
       alert("Failed to generate report. Please try again.");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateConcept = async () => {
+    if (!patent) return;
+
+    setGeneratingConcept(true);
+
+    try {
+      const response = await fetch("/api/patents/generate-concept", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patentResultId: patent.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Concept generation failed");
+      }
+
+      const data = await response.json();
+      setConcept(data.concept);
+    } catch (err) {
+      console.error("Error generating concept:", err);
+      alert("Failed to generate $1B patent concept. Please try again.");
+    } finally {
+      setGeneratingConcept(false);
     }
   };
 
@@ -677,6 +769,257 @@ export default function PatentDetailPage() {
                 </span>
               ) : (
                 "Generate AI Opportunity Report"
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* $1B Patent Concept Section */}
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-white">$1B Patent Concept</h1>
+          {concept && (
+            <div className="flex gap-2">
+              <span className="px-3 py-1 text-xs font-bold text-purple-400 bg-purple-900/30 border border-purple-700 rounded-full">
+                NEW PATENT DIRECTION
+              </span>
+              <span className="px-3 py-1 text-xs font-bold text-orange-400 bg-orange-900/30 border border-orange-700 rounded-full">
+                ATTORNEY REVIEW REQUIRED
+              </span>
+            </div>
+          )}
+        </div>
+
+        {concept ? (
+          <div className="space-y-6">
+            {/* Concept Header */}
+            <div className="rounded-xl border border-purple-900/50 bg-gradient-to-r from-purple-950/50 to-pink-950/50 p-8">
+              <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+                <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-600">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white">
+                      {concept.overall_score}
+                    </div>
+                    <div className="text-xs text-purple-200">Score</div>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    {concept.concept_title}
+                  </h2>
+                  <p className="text-purple-300">{concept.bottleneck_solved}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Why Now */}
+            <div className="rounded-xl border border-blue-900/50 bg-blue-950/20 p-6">
+              <h3 className="text-lg font-bold text-blue-400 mb-3">Why Now</h3>
+              <p className="text-blue-200">{concept.why_now}</p>
+            </div>
+
+            {/* Old Invention Insight */}
+            <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+              <h3 className="text-lg font-bold text-gray-300 mb-3">Old Invention Insight</h3>
+              <p className="text-gray-400">{concept.old_invention_insight}</p>
+            </div>
+
+            {/* New Invention Concept */}
+            <div className="rounded-xl border border-green-900/50 bg-green-950/20 p-6">
+              <h3 className="text-lg font-bold text-green-400 mb-3">New Invention Concept</h3>
+              <p className="text-green-200">{concept.new_invention_concept}</p>
+            </div>
+
+            {/* System Architecture */}
+            {concept.system_architecture && concept.system_architecture.length > 0 && (
+              <div className="rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-6">
+                <h3 className="text-lg font-bold text-indigo-400 mb-4">System Architecture</h3>
+                <div className="space-y-4">
+                  {concept.system_architecture.map((item, idx) => (
+                    <div key={idx} className="border-l-2 border-indigo-600 pl-4">
+                      <div className="font-semibold text-indigo-300">{item.component}</div>
+                      <div className="text-sm text-indigo-200 mt-1">{item.function}</div>
+                      <div className="text-xs text-indigo-400 mt-1">
+                        Why it matters: {item.why_it_matters}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Upgrade Layers */}
+            {concept.ai_upgrade_layers && concept.ai_upgrade_layers.length > 0 && (
+              <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 p-6">
+                <h3 className="text-lg font-bold text-cyan-400 mb-4">AI Upgrade Layers</h3>
+                <div className="space-y-3">
+                  {concept.ai_upgrade_layers.map((item, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-cyan-500" />
+                      <div>
+                        <div className="font-medium text-cyan-300">{item.layer}</div>
+                        <div className="text-sm text-cyan-200">{item.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Possible Claim Directions */}
+            {concept.possible_claim_directions && concept.possible_claim_directions.length > 0 && (
+              <div className="rounded-xl border border-purple-900/50 bg-purple-950/20 p-6">
+                <h3 className="text-lg font-bold text-purple-400 mb-4">Possible Claim Directions</h3>
+                <div className="space-y-4">
+                  {concept.possible_claim_directions.map((item, idx) => (
+                    <div key={idx} className="bg-purple-900/20 rounded-lg p-4">
+                      <div className="font-semibold text-purple-300">{item.claim_direction}</div>
+                      <div className="text-sm text-purple-200 mt-2">{item.description}</div>
+                      <div className="text-xs text-purple-400 mt-2">
+                        <strong>Novelty:</strong> {item.novelty_angle}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Venture Concept */}
+            {concept.venture_concept && (
+              <div className="rounded-xl border border-blue-900/50 bg-blue-950/20 p-6">
+                <h3 className="text-lg font-bold text-blue-400 mb-4">Venture Concept</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-sm text-blue-300 font-medium">Name</div>
+                    <div className="text-blue-100">{concept.venture_concept.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-blue-300 font-medium">Description</div>
+                    <div className="text-blue-100">{concept.venture_concept.description}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-blue-300 font-medium">Business Model</div>
+                    <div className="text-blue-100">{concept.venture_concept.business_model}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-blue-300 font-medium">Pricing/Revenue Model</div>
+                    <div className="text-blue-100">{concept.venture_concept.pricing_or_revenue_model}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Target Customers */}
+            {concept.target_customers && concept.target_customers.length > 0 && (
+              <div className="rounded-xl border border-green-900/50 bg-green-950/20 p-6">
+                <h3 className="text-lg font-bold text-green-400 mb-4">Target Customers</h3>
+                <div className="space-y-3">
+                  {concept.target_customers.map((item, idx) => (
+                    <div key={idx} className="border-l-2 border-green-600 pl-4">
+                      <div className="font-semibold text-green-300">{item.customer}</div>
+                      <div className="text-sm text-green-200 mt-1">{item.why_they_need_it}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* $1B Thesis */}
+            <div className="rounded-xl border border-yellow-900/50 bg-yellow-950/20 p-6">
+              <h3 className="text-lg font-bold text-yellow-400 mb-3">$1 Billion Thesis</h3>
+              <p className="text-yellow-200">{concept.billion_dollar_thesis}</p>
+            </div>
+
+            {/* DARPA Relevance */}
+            {concept.darpa_relevance && (
+              <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6">
+                <h3 className="text-lg font-bold text-red-400 mb-3">DARPA / Defense Relevance</h3>
+                <p className="text-red-200">{concept.darpa_relevance}</p>
+              </div>
+            )}
+
+            {/* Provisional Draft Starter */}
+            {concept.provisional_draft_starter && (
+              <div className="rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-6">
+                <h3 className="text-lg font-bold text-indigo-400 mb-4">Provisional Patent Draft Starter</h3>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <div className="font-semibold text-indigo-300 mb-1">Field of Invention</div>
+                    <div className="text-indigo-100">{concept.provisional_draft_starter.field_of_invention}</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-indigo-300 mb-1">Problem</div>
+                    <div className="text-indigo-100">{concept.provisional_draft_starter.problem}</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-indigo-300 mb-1">Summary of Invention</div>
+                    <div className="text-indigo-100">{concept.provisional_draft_starter.summary_of_invention}</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-indigo-900/30 rounded text-xs text-indigo-300">
+                  This is a starter template only. Professional patent attorney review and drafting required.
+                </div>
+              </div>
+            )}
+
+            {/* Risks & Attorney Review */}
+            <div className="rounded-xl border border-orange-900/50 bg-orange-950/20 p-6">
+              <h3 className="text-lg font-bold text-orange-400 mb-3">Risks</h3>
+              <p className="text-orange-200 mb-4">{concept.risks}</p>
+              <div className="rounded-lg border border-orange-800 bg-orange-900/20 p-4">
+                <p className="text-sm text-orange-300">
+                  <strong>Attorney Review Notes:</strong> {concept.attorney_review_notes}
+                </p>
+              </div>
+            </div>
+
+            {/* Legal Warning */}
+            <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6">
+              <div className="flex items-start gap-3">
+                <svg className="h-6 w-6 text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <h4 className="font-bold text-red-400 mb-2">Not Legal Advice</h4>
+                  <p className="text-sm text-red-200">
+                    This concept is for informational purposes only. Do NOT file a patent based solely on this AI-generated concept. 
+                    This does NOT constitute legal advice. Professional patent attorney review is required to assess freedom to operate, 
+                    patentability, prior art, infringement risk, and claim strategy before any patent filing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-purple-900/30">
+              <svg className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h2 className="mt-4 text-xl font-bold text-white">
+              No $1B Patent Concept Yet
+            </h2>
+            <p className="mt-2 text-zinc-400 max-w-lg mx-auto">
+              Generate an AI-powered patent concept inspired by this old invention and future bottlenecks. 
+              This will create a NEW improvement direction (not copy the old patent) for venture creation and possible patent filing.
+            </p>
+            <button
+              onClick={handleGenerateConcept}
+              disabled={generatingConcept}
+              className="mt-6 inline-block rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {generatingConcept ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating $1B Patent Concept...
+                </span>
+              ) : (
+                "Generate $1B Patent Concept"
               )}
             </button>
           </div>

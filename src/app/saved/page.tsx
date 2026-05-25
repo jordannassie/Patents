@@ -14,6 +14,9 @@ interface HunterOpportunity {
   bottleneck_reason: string;
   reason_saved: string | null;
   report_id: string | null;
+  has_concept: boolean;
+  concept_title: string | null;
+  concept_score: number | null;
   created_at: string;
 }
 
@@ -108,6 +111,11 @@ export default function SavedPage() {
                         ) : (
                           <span className="px-2 py-1 text-xs font-medium bg-blue-900/50 text-blue-400 rounded">
                             Pre-AI Candidate
+                          </span>
+                        )}
+                        {opp.has_concept && (
+                          <span className="px-2 py-1 text-xs font-medium bg-purple-900/50 text-purple-400 rounded">
+                            $1B Concept Ready
                           </span>
                         )}
                       </div>
