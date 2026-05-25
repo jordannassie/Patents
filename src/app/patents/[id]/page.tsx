@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import CopyForGPTButton from "@/components/CopyForGPTButton";
 import { formatOpportunityForGPT, formatQuickGPTPrompt } from "@/lib/patents/formatOpportunityForGPT";
+import { classifyPatentStatus, getVerificationChecklist } from "@/lib/patents/statusClassification";
 
 interface PatentData {
   id: string;
@@ -481,17 +482,86 @@ export default function PatentDetailPage() {
                   <h3 className="text-lg font-semibold text-white">{creationPlan.source_title}</h3>
                 </div>
 
-                <div>
-                  <div className="text-sm text-zinc-500">Status</div>
-                  <div className="text-zinc-300">{creationPlan.source_status_estimate}</div>
-                </div>
-
                 {creationPlan.source_summary && (
                   <div>
                     <div className="text-sm text-zinc-500">Summary</div>
                     <p className="text-zinc-400">{creationPlan.source_summary}</p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Status and Recommended Action */}
+            <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Status & Recommended Action</h2>
+              
+              {(() => {
+                const classification = classifyPatentStatus(creationPlan.source_status_estimate);
+                return (
+                  <div className="space-y-4">
+                    {/* Source Status */}
+                    <div>
+                      <div className="text-sm text-zinc-500 mb-2">Source Status</div>
+                      <div className={`inline-block rounded-lg px-4 py-2 border ${classification.statusColor}`}>
+                        {classification.sourceStatus}
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1">
+                        Raw estimate: {creationPlan.source_status_estimate}
+                      </div>
+                    </div>
+
+                    {/* Recommended Action */}
+                    <div>
+                      <div className="text-sm text-zinc-500 mb-2">Recommended Action</div>
+                      <div className={`rounded-lg p-4 border ${classification.actionColor}`}>
+                        <p className="text-sm">{classification.recommendedAction}</p>
+                      </div>
+                    </div>
+
+                    {/* Legal Review */}
+                    <div>
+                      <div className="text-sm text-zinc-500 mb-2">Legal Review</div>
+                      <div className="rounded-lg px-4 py-2 border bg-red-900/10 border-red-800 text-red-200 inline-block">
+                        Attorney Review Required
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Status Meaning Info Card */}
+            <div className="mt-6 rounded-xl border-2 border-indigo-800 bg-indigo-950/30 p-6">
+              <div className="flex items-start gap-3">
+                <svg className="h-6 w-6 flex-shrink-0 text-indigo-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-indigo-300 mb-2">What This Status Means</h3>
+                  <p className="text-sm text-indigo-200 leading-relaxed">
+                    PatentBoom uses patent records to identify invention signals. Legal status is not certified. 
+                    Attorney review is required before relying on expiration, freedom to operate, or patentability. 
+                    Pending or active records should not be copied; they can only inform a differentiated new improvement strategy.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Verification Checklist */}
+            <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Verification Checklist</h2>
+              <p className="text-sm text-zinc-400 mb-4">
+                Before relying on this status or filing a new patent, verify:
+              </p>
+              <div className="space-y-2">
+                {getVerificationChecklist().map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="h-5 w-5 rounded border-2 border-zinc-600 bg-zinc-800"></div>
+                    </div>
+                    <div className="text-sm text-zinc-300">{item}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
