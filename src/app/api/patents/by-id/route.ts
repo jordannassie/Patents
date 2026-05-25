@@ -44,7 +44,14 @@ export async function GET(request: Request) {
       .limit(1)
       .maybeSingle();
 
-    // Load venture plan for this patent
+    // Load creation plan for this patent
+    const { data: creationPlan } = await supabase
+      .from('patent_creation_plans')
+      .select('*')
+      .eq('patent_result_id', id)
+      .maybeSingle();
+
+    // Load venture plan for this patent (legacy)
     const { data: venturePlan } = await supabase
       .from('patent_venture_plans')
       .select('*')
@@ -68,6 +75,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       patent,
       report: report || null,
+      creationPlan: creationPlan || null,
       venturePlan: venturePlan || null,
       concept: concept || null,
       hunterItem: hunterItem || null,
